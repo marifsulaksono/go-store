@@ -33,7 +33,7 @@ func GetAllItems(w http.ResponseWriter, r *http.Request) {
 		w.Write(jsonData)
 		return
 	}
-	http.Error(w, "Data not found", http.StatusNotFound)
+	http.Error(w, "Method isn't valid!", http.StatusBadRequest)
 }
 
 func GetItembyId(w http.ResponseWriter, r *http.Request) {
@@ -43,7 +43,7 @@ func GetItembyId(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		id, err := strconv.ParseInt(vars["id"], 10, 0)
 		if err != nil {
-			fmt.Println(err.Error())
+			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
 
@@ -55,7 +55,7 @@ func GetItembyId(w http.ResponseWriter, r *http.Request) {
 
 		var jsonData, errJ = json.Marshal(result)
 		if errJ != nil {
-			fmt.Println()
+			http.Error(w, errJ.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -63,7 +63,7 @@ func GetItembyId(w http.ResponseWriter, r *http.Request) {
 		w.Write(jsonData)
 		return
 	}
-	http.Error(w, "Data not found", http.StatusNotFound)
+	http.Error(w, "Method isn't valid!", http.StatusBadRequest)
 }
 
 func InsertItem(w http.ResponseWriter, r *http.Request) {
@@ -79,7 +79,7 @@ func InsertItem(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 
 		if errC := config.DB.Create(&item).Error; errC != nil {
-			fmt.Println(errC.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -87,7 +87,7 @@ func InsertItem(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Add item success!"))
 		return
 	}
-	http.Error(w, "", http.StatusNotFound)
+	http.Error(w, "Method isn't valid!", http.StatusBadRequest)
 }
 
 func UpdateItem(w http.ResponseWriter, r *http.Request) {
@@ -97,7 +97,7 @@ func UpdateItem(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		id, errV := strconv.ParseInt(vars["id"], 10, 0)
 		if errV != nil {
-			http.Error(w, errV.Error(), http.StatusInternalServerError)
+			http.Error(w, errV.Error(), http.StatusNotFound)
 			return
 		}
 
@@ -113,7 +113,7 @@ func UpdateItem(w http.ResponseWriter, r *http.Request) {
 		config.DB.Where("id = ?", id).First(&itemId)
 		if errU := config.DB.Model(&itemId).Updates(item).Error; errU != nil {
 			w.Write([]byte("Id not found"))
-			fmt.Println(errU.Error())
+			http.Error(w, errU.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -121,7 +121,7 @@ func UpdateItem(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Update item success!"))
 		return
 	}
-	http.Error(w, "", http.StatusNotFound)
+	http.Error(w, "Method isn't valid!", http.StatusBadRequest)
 }
 
 func SalesItem(w http.ResponseWriter, r *http.Request) {
@@ -136,7 +136,7 @@ func SalesItem(w http.ResponseWriter, r *http.Request) {
 
 		var jsonData, errJ = json.Marshal(result)
 		if errJ != nil {
-			fmt.Println(errJ.Error())
+			http.Error(w, errJ.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -144,7 +144,7 @@ func SalesItem(w http.ResponseWriter, r *http.Request) {
 		w.Write(jsonData)
 		return
 	}
-	http.Error(w, "Data not found", http.StatusNotFound)
+	http.Error(w, "Method isn't valid!", http.StatusBadRequest)
 }
 
 func SaleItem(w http.ResponseWriter, r *http.Request) {
@@ -154,7 +154,7 @@ func SaleItem(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		id, errV := strconv.ParseInt(vars["id"], 10, 0)
 		if errV != nil {
-			fmt.Println(errV.Error())
+			http.Error(w, errV.Error(), http.StatusNotFound)
 			return
 		}
 
@@ -167,7 +167,7 @@ func SaleItem(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(message))
 		return
 	}
-	http.Error(w, "Data not found", http.StatusNotFound)
+	http.Error(w, "Method isn't valid!", http.StatusBadRequest)
 }
 
 func SoldoutsItem(w http.ResponseWriter, r *http.Request) {
@@ -182,7 +182,7 @@ func SoldoutsItem(w http.ResponseWriter, r *http.Request) {
 
 		var jsonData, errJ = json.Marshal(result)
 		if errJ != nil {
-			fmt.Println(errJ.Error())
+			http.Error(w, errJ.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -190,7 +190,7 @@ func SoldoutsItem(w http.ResponseWriter, r *http.Request) {
 		w.Write(jsonData)
 		return
 	}
-	http.Error(w, "Data not found", http.StatusNotFound)
+	http.Error(w, "Method isn't valid!", http.StatusBadRequest)
 }
 
 func SoldoutItem(w http.ResponseWriter, r *http.Request) {
@@ -200,7 +200,7 @@ func SoldoutItem(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		id, errV := strconv.ParseInt(vars["id"], 10, 0)
 		if errV != nil {
-			fmt.Println(errV.Error())
+			http.Error(w, errV.Error(), http.StatusNotFound)
 			return
 		}
 
@@ -213,7 +213,7 @@ func SoldoutItem(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(message))
 		return
 	}
-	http.Error(w, "", http.StatusNotFound)
+	http.Error(w, "Method isn't valid!", http.StatusBadRequest)
 }
 
 func DeleteItem(w http.ResponseWriter, r *http.Request) {
@@ -223,13 +223,13 @@ func DeleteItem(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		id, errV := strconv.ParseInt(vars["id"], 10, 0)
 		if errV != nil {
-			fmt.Println(errV.Error())
+			http.Error(w, errV.Error(), http.StatusNotFound)
 			return
 		}
 
 		if errD := config.DB.Where("id = ?", id).Delete(&entity.Item{}).Error; errD != nil {
 			w.Write([]byte("Id not found"))
-			fmt.Println(errD.Error())
+			http.Error(w, errD.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -237,7 +237,7 @@ func DeleteItem(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Delete success!"))
 		return
 	}
-	http.Error(w, "", http.StatusNotFound)
+	http.Error(w, "Method isn't valid!", http.StatusBadRequest)
 }
 
 func CategoryItem(w http.ResponseWriter, r *http.Request) {
@@ -247,7 +247,7 @@ func CategoryItem(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		id, errV := strconv.ParseInt(vars["id"], 10, 0)
 		if errV != nil {
-			http.Error(w, errV.Error(), http.StatusInternalServerError)
+			http.Error(w, errV.Error(), http.StatusNotFound)
 			return
 		}
 
@@ -259,7 +259,7 @@ func CategoryItem(w http.ResponseWriter, r *http.Request) {
 
 		var jsonData, errJ = json.Marshal(result)
 		if errJ != nil {
-			fmt.Println(errJ.Error())
+			http.Error(w, errJ.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -267,5 +267,5 @@ func CategoryItem(w http.ResponseWriter, r *http.Request) {
 		w.Write(jsonData)
 		return
 	}
-	http.Error(w, "Data not found", http.StatusNotFound)
+	http.Error(w, "Method isn't valid!", http.StatusBadRequest)
 }
