@@ -19,7 +19,7 @@ type JWTClaim struct {
 // const PASSWORD = "arf123"
 
 var JWT_SECRET_KEY = []byte("be excited about learning something useful")
-var Data entity.UserLogin
+var DataLogin entity.UserLogin
 
 func JWTMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

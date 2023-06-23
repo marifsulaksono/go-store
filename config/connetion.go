@@ -1,8 +1,6 @@
 package config
 
 import (
-	"fmt"
-
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -14,6 +12,6 @@ func Connect() {
 	newDB := "root:@tcp(127.0.0.1:3306)/db_store"
 	DB, err = gorm.Open(mysql.Open(newDB), &gorm.Config{})
 	if err != nil {
-		fmt.Println("Connection failed!")
+		panic("Connection failed!")
 	}
 }
