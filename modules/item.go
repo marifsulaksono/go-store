@@ -2,14 +2,12 @@ package modules
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
 	"gostore/config"
 	"gostore/entity"
+	"gostore/helper"
+	"gostore/middleware"
 	"net/http"
-	"strconv"
-
-	"github.com/gorilla/mux"
-	"gorm.io/gorm"
 )
 
 // ==================== Function Data Items ====================
@@ -22,7 +20,7 @@ func GetAllItems(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		ResponseWrite(w, result, "Success get all items data!")
+		helper.ResponseWrite(w, result, "Success get all items data!")
 		return
 	}
 	http.Error(w, "Method isn't valid!", http.StatusBadRequest)
@@ -30,24 +28,23 @@ func GetAllItems(w http.ResponseWriter, r *http.Request) {
 
 func GetItembyId(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
-		vars := mux.Vars(r)
-		id, err := strconv.ParseInt(vars["id"], 10, 0)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+		ctx := r.Context()
+		userId := ctx.Value(middleware.GOSTORE_USERID)
+		fmt.Println(userId)
+
+		id, s := helper.IdVarsMux(w, r)
+		if !s {
 			return
 		}
 
 		var result entity.ItemResponse
-		if err := config.DB.Where("id = ?", id).Preload("Category", "id NOT IN (?)", "cancelled").First(&result).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				w.Write([]byte("id not found!"))
-				return
-			}
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+		err := config.DB.Where("id = ?", id).Preload("Category", "id NOT IN (?)", "cancelled").First(&result).Error
+		if err != nil {
+			helper.RecordNotFound(w, err)
 			return
 		}
 
-		ResponseWrite(w, result, "Success get the item data!")
+		helper.ResponseWrite(w, result, "Success get the item data!")
 		return
 	}
 	http.Error(w, "Method isn't valid!", http.StatusBadRequest)
@@ -68,7 +65,7 @@ func InsertItem(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		ResponseWrite(w, &item, "Success insert item data!")
+		helper.ResponseWrite(w, &item, "Success insert item data!")
 		return
 	}
 	http.Error(w, "Method isn't valid!", http.StatusBadRequest)
@@ -76,10 +73,8 @@ func InsertItem(w http.ResponseWriter, r *http.Request) {
 
 func UpdateItem(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "PUT" {
-		vars := mux.Vars(r)
-		id, errV := strconv.ParseInt(vars["id"], 10, 0)
-		if errV != nil {
-			http.Error(w, errV.Error(), http.StatusBadRequest)
+		id, s := helper.IdVarsMux(w, r)
+		if !s {
 			return
 		}
 
@@ -93,11 +88,7 @@ func UpdateItem(w http.ResponseWriter, r *http.Request) {
 
 		itemId := entity.Item{}
 		if err := config.DB.Where("id = ?", id).First(&itemId).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				w.Write([]byte("Id not found"))
-				return
-			}
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			helper.RecordNotFound(w, err)
 			return
 		}
 
@@ -106,7 +97,7 @@ func UpdateItem(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		ResponseWrite(w, itemId, "Success update item data!")
+		helper.ResponseWrite(w, itemId, "Success update item data!")
 		return
 	}
 	http.Error(w, "Method isn't valid!", http.StatusBadRequest)
@@ -115,7 +106,8 @@ func UpdateItem(w http.ResponseWriter, r *http.Request) {
 func SalesItem(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		var result []entity.ItemResponse
-		if err := config.DB.Where("isSale = ?", 1).Preload("Category", "id NOT IN (?)", "cancelled").Find(&result).Error; err != nil {
+		err := config.DB.Where("isSale = ?", 1).Preload("Category", "id NOT IN (?)", "cancelled").Find(&result).Error
+		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -125,7 +117,7 @@ func SalesItem(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		ResponseWrite(w, result, "Success get all sale items data!")
+		helper.ResponseWrite(w, result, "Success get all sale items data!")
 		return
 	}
 	http.Error(w, "Method isn't valid!", http.StatusBadRequest)
@@ -133,20 +125,14 @@ func SalesItem(w http.ResponseWriter, r *http.Request) {
 
 func SaleItem(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "PUT" {
-		vars := mux.Vars(r)
-		id, errV := strconv.ParseInt(vars["id"], 10, 0)
-		if errV != nil {
-			http.Error(w, errV.Error(), http.StatusBadRequest)
+		id, s := helper.IdVarsMux(w, r)
+		if !s {
 			return
 		}
 
 		itemId := entity.Item{}
 		if err := config.DB.Where("id = ?", id).First(&itemId).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				http.Error(w, "id not found!", http.StatusBadRequest)
-				return
-			}
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			helper.RecordNotFound(w, err)
 			return
 		}
 
@@ -155,7 +141,7 @@ func SaleItem(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		ResponseWrite(w, itemId.Id, "Update success, item is sale now!")
+		helper.ResponseWrite(w, itemId.Id, "Update success, item is sale now!")
 		return
 	}
 	http.Error(w, "Method isn't valid!", http.StatusBadRequest)
@@ -164,7 +150,8 @@ func SaleItem(w http.ResponseWriter, r *http.Request) {
 func SoldoutsItem(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		var result []entity.ItemResponse
-		if err := config.DB.Where("isSale = ?", 2).Preload("Category", "id NOT IN (?)", "cancelled").Find(&result).Error; err != nil {
+		err := config.DB.Where("isSale = ?", 0).Preload("Category", "id NOT IN (?)", "cancelled").Find(&result).Error
+		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -174,7 +161,7 @@ func SoldoutsItem(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		ResponseWrite(w, result, "Success get all soldout items data!")
+		helper.ResponseWrite(w, result, "Success get all soldout items data!")
 		return
 	}
 	http.Error(w, "Method isn't valid!", http.StatusBadRequest)
@@ -182,29 +169,23 @@ func SoldoutsItem(w http.ResponseWriter, r *http.Request) {
 
 func SoldoutItem(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "PUT" {
-		vars := mux.Vars(r)
-		id, errV := strconv.ParseInt(vars["id"], 10, 0)
-		if errV != nil {
-			http.Error(w, errV.Error(), http.StatusNotFound)
+		id, s := helper.IdVarsMux(w, r)
+		if !s {
 			return
 		}
 
 		var itemId entity.Item
 		if err := config.DB.Where("id = ?", id).First(&itemId).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				http.Error(w, "id not found!", http.StatusBadRequest)
-				return
-			}
+			helper.RecordNotFound(w, err)
+			return
+		}
+
+		if err := config.DB.Model(&itemId).Update("isSale", 0).Error; err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		if err := config.DB.Model(&itemId).Update("isSale", 2).Error; err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		ResponseWrite(w, itemId.Id, "Update success, item is sold out!")
+		helper.ResponseWrite(w, itemId.Id, "Update success, item is sold out!")
 		return
 	}
 	http.Error(w, "Method isn't valid!", http.StatusBadRequest)
@@ -212,20 +193,14 @@ func SoldoutItem(w http.ResponseWriter, r *http.Request) {
 
 func DeleteItem(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "DELETE" {
-		vars := mux.Vars(r)
-		id, errV := strconv.ParseInt(vars["id"], 10, 0)
-		if errV != nil {
-			http.Error(w, errV.Error(), http.StatusBadRequest)
+		id, s := helper.IdVarsMux(w, r)
+		if !s {
 			return
 		}
 
 		var itemId entity.Item
 		if err := config.DB.Where("id = ?", id).First(&itemId).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				http.Error(w, "id not found!", http.StatusBadRequest)
-				return
-			}
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			helper.RecordNotFound(w, err)
 			return
 		}
 
@@ -234,7 +209,7 @@ func DeleteItem(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		ResponseWrite(w, nil, "Success delete item data!")
+		helper.ResponseWrite(w, nil, "Success delete item data!")
 		return
 	}
 	http.Error(w, "Method isn't valid!", http.StatusBadRequest)
@@ -242,10 +217,8 @@ func DeleteItem(w http.ResponseWriter, r *http.Request) {
 
 func CategoryItem(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
-		vars := mux.Vars(r)
-		id, errV := strconv.ParseInt(vars["id"], 10, 0)
-		if errV != nil {
-			http.Error(w, errV.Error(), http.StatusNotFound)
+		id, s := helper.IdVarsMux(w, r)
+		if !s {
 			return
 		}
 
@@ -260,7 +233,7 @@ func CategoryItem(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		ResponseWrite(w, result, "Success get all categories!")
+		helper.ResponseWrite(w, result, "Success get all categories!")
 		return
 	}
 	http.Error(w, "Method isn't valid!", http.StatusBadRequest)

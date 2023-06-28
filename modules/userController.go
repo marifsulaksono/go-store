@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"gostore/config"
 	"gostore/entity"
+	"gostore/helper"
+	"gostore/middleware"
 	"net/http"
 	"time"
 
@@ -12,6 +14,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
+
+var DataLogin entity.UserLogin
 
 func Register(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
@@ -31,7 +35,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		ResponseWrite(w, userRegister, "Register success!")
+		helper.ResponseWrite(w, userRegister, "Register success!")
 		return
 	}
 	http.Error(w, "Method isn't valid!", http.StatusBadRequest)
@@ -60,8 +64,9 @@ func Login(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		jwtExpTime := time.Now().Add(time.Minute * 5)
-		claims := &JWTClaim{
+		jwtExpTime := time.Now().Add(time.Hour * 1)
+		claims := &middleware.JWTClaim{
+			Id:       userLogin.Id,
 			Username: userLogin.Username,
 			Role:     userLogin.Role,
 			RegisteredClaims: jwt.RegisteredClaims{
@@ -71,7 +76,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		}
 
 		tokenAlgorithm := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-		tokenString, err := tokenAlgorithm.SignedString(JWT_SECRET_KEY)
+		tokenString, err := tokenAlgorithm.SignedString(middleware.JWT_SECRET_KEY)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -83,8 +88,8 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		}
 
 		message := fmt.Sprintf("Login success, welcome %s!", userLogin.Name)
-		ResponseWrite(w, tokenString, message)
+		helper.ResponseWrite(w, tokenString, message)
 		return
 	}
-	http.Error(w, "Method is'n valid", http.StatusBadRequest)
+	http.Error(w, "Method isn't valid!", http.StatusBadRequest)
 }

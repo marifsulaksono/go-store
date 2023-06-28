@@ -1,8 +1,8 @@
-package modules
+package middleware
 
 import (
+	"context"
 	"fmt"
-	"gostore/entity"
 	"net/http"
 	"strings"
 
@@ -10,19 +10,27 @@ import (
 )
 
 type JWTClaim struct {
+	Id       int
 	Username string
 	Role     string
 	jwt.RegisteredClaims
 }
 
+var JWT_SECRET_KEY = []byte("be excited about learning something useful")
+
 // const USERNAME = "arif"
 // const PASSWORD = "arf123"
 
-var JWT_SECRET_KEY = []byte("be excited about learning something useful")
-var DataLogin entity.UserLogin
+type Key string
+
+const (
+	GOSTORE_USERID Key = "go-store-id"
+)
 
 func JWTMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
 		if r.URL.Path == "/login" {
 			next.ServeHTTP(w, r)
 			return
@@ -66,6 +74,15 @@ func JWTMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			http.Error(w, "Unauthorized!", http.StatusUnauthorized)
 			return
 		}
+
+		payload, ok := token.Claims.(*JWTClaim)
+		if !ok {
+			http.Error(w, "Unauthorized!", http.StatusUnauthorized)
+			return
+		}
+
+		ctx = context.WithValue(ctx, GOSTORE_USERID, payload.Id)
+		r = r.WithContext(ctx)
 
 		next.ServeHTTP(w, r)
 	})
