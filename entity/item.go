@@ -21,6 +21,15 @@ type ItemResponse struct {
 	Category   Category `json:"category"`
 }
 
+type ItemTransaction struct {
+	Id   int    `json:"-"`
+	Name string `json:"name"`
+}
+
 func (ItemResponse) TableName() string {
+	return "items"
+}
+
+func (ItemTransaction) TableName() string {
 	return "items"
 }
