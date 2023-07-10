@@ -32,3 +32,11 @@ func (TransactionItemResponse) TableName() string {
 func (AllTransactionItemResponse) TableName() string {
 	return "transaction_items"
 }
+
+// {
+// "transaction_id": 1,
+// "item_id": 4,
+// "qty": 3,
+// "price": 1000000,
+// "subtotal": 1000000
+// }
