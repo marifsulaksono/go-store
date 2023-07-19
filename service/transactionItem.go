@@ -2,30 +2,61 @@ package service
 
 import (
 	"gostore/entity"
+	"gostore/helper"
 	"gostore/repo"
 )
 
-func GetTransactionItem() ([]entity.TransactionItemResponse, error) {
-	result, err := repo.GetTransactionItem()
+type TransactionItemService struct {
+	Repo repo.TransactionItemRepository
+}
+
+func NewTransactionItemService(r repo.TransactionItemRepository) *TransactionItemService {
+	return &TransactionItemService{
+		Repo: r,
+	}
+}
+
+func (ti *TransactionItemService) GetTransactionItems() ([]entity.TransactionItemResponse, error) {
+	result, err := ti.Repo.GetTransactionItems()
 	return result, err
 }
 
-func GetTransactionItemById(id int64) (entity.TransactionItemResponse, error) {
-	result, err := repo.GetTransactionItemById(id)
+func (ti *TransactionItemService) GetTransactionItemById(id int) (entity.TransactionItemResponse, error) {
+	result, err := ti.Repo.GetTransactionItemById(id)
 	return result, err
 }
 
-func CreateTransactionItem(transactionItem entity.TransactionItem) error {
-	err := repo.CreateTransactionItem(transactionItem)
+func (ti *TransactionItemService) CreateTransactionItem(transactionItem *entity.TransactionItem) error {
+	err := ti.Repo.CreateTransactionItem(transactionItem)
 	return err
 }
 
-func UpdateTransactionItem(id int64, transactionItem entity.TransactionItem) error {
-	err := repo.UpdateTransactionItem(id, transactionItem)
+func (ti *TransactionItemService) UpdateTransactionItem(id int, transactionItem *entity.TransactionItem) error {
+	err := ti.Repo.UpdateTransactionItem(id, transactionItem)
 	return err
 }
 
-func DeleteTransactionItem(id int64) error {
-	err := repo.DeleteTransactionItem(id)
+func (ti *TransactionItemService) SoftDeleteTransactionItem(id int) error {
+	_, err := ti.Repo.GetTransactionItemById(id)
+	if err != nil {
+		return helper.ErrRecDeleted
+	}
+
+	err = ti.Repo.SoftDeleteTransactionItem(id)
+	return err
+}
+
+func (ti *TransactionItemService) RestoreDeletedTransactionItem(id int) error {
+	_, err := ti.Repo.GetTransactionItemById(id)
+	if err == nil {
+		return helper.ErrRecRestored
+	}
+
+	err = ti.Repo.RestoreDeletedTransactionItem(id)
+	return err
+}
+
+func (ti *TransactionItemService) DeleteTransactionItem(id int) error {
+	err := ti.Repo.DeleteTransactionItem(id)
 	return err
 }
