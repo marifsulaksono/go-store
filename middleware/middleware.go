@@ -24,14 +24,16 @@ var JWT_SECRET_KEY = []byte("be excited about learning something useful")
 type Key string
 
 const (
-	GOSTORE_USERID Key = "go-store-id"
+	GOSTORE_USERID   Key = "go-store-id"
+	GOSTORE_USERNAME Key = "go-store-user"
+	GOSTORE_USERROLE Key = "go-store-role"
 )
 
 func JWTMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		if r.URL.Path == "/login" {
+		if r.URL.Path == "/login" || r.URL.Path == "/register" {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -82,8 +84,9 @@ func JWTMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		ctx = context.WithValue(ctx, GOSTORE_USERID, payload.Id)
-		r = r.WithContext(ctx)
+		ctx = context.WithValue(ctx, GOSTORE_USERNAME, payload.Username)
+		ctx = context.WithValue(ctx, GOSTORE_USERROLE, payload.Role)
 
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
