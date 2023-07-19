@@ -3,10 +3,10 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
-	"gostore/config"
 	"gostore/entity"
 	"gostore/helper"
 	"gostore/middleware"
+	"gostore/service"
 	"net/http"
 	"time"
 
@@ -15,31 +15,42 @@ import (
 	"gorm.io/gorm"
 )
 
-func Register(w http.ResponseWriter, r *http.Request) {
+type UserController struct {
+	Service service.UserService
+}
+
+func NewUserController(s service.UserService) *UserController {
+	return &UserController{
+		Service: s,
+	}
+}
+
+func (u *UserController) Register(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
-		var userRegister entity.User
-		err := json.NewDecoder(r.Body).Decode(&userRegister)
+		var user entity.User
+		err := json.NewDecoder(r.Body).Decode(&user)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		defer r.Body.Close()
 
-		hashPwd, _ := bcrypt.GenerateFromPassword([]byte(userRegister.Password), bcrypt.DefaultCost)
-		userRegister.Password = string(hashPwd)
+		hashPwd, _ := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+		user.Password = string(hashPwd)
 
-		if err := config.DB.Create(&userRegister).Error; err != nil {
+		if err := u.Service.CreateUser(&user); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		helper.ResponseWrite(w, userRegister, "Register success!")
+		user.Password = ""
+		helper.ResponseWrite(w, user, "Register success!")
 		return
 	}
 	http.Error(w, "Method isn't valid!", http.StatusBadRequest)
 }
 
-func Login(w http.ResponseWriter, r *http.Request) {
+func (u *UserController) Login(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		var err error
 		// Authentication
@@ -49,8 +60,8 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Check user authentication on database
-		var userLogin entity.User
-		userLogin, err = entity.GetUserValid(username)
+		var userLogin entity.UserResponse
+		userLogin, err = u.Service.GetUserByUsername(username)
 		if err != nil {
 			if err == gorm.ErrRecordNotFound {
 				http.Error(w, "Username/password is wrong!", http.StatusNotFound)
