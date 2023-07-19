@@ -5,15 +5,22 @@ import (
 	"fmt"
 	"gostore/entity"
 	"gostore/helper"
-	"gostore/repo"
 	"gostore/service"
 	"net/http"
 )
 
-// ==================== Function Data Items ====================
+type ItemController struct {
+	Service service.ItemService
+}
 
-func GetAllItems(w http.ResponseWriter, r *http.Request) {
-	items, err := service.GetAllItems()
+func NewItemContoller(s service.ItemService) *ItemController {
+	return &ItemController{
+		Service: s,
+	}
+}
+
+func (i *ItemController) GetItems(w http.ResponseWriter, r *http.Request) {
+	items, err := i.Service.GetAllItems()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -22,9 +29,9 @@ func GetAllItems(w http.ResponseWriter, r *http.Request) {
 	helper.ResponseWrite(w, items, "Success get all items")
 }
 
-func GetItembyId(w http.ResponseWriter, r *http.Request) {
+func (i *ItemController) GetItembyId(w http.ResponseWriter, r *http.Request) {
 	if id, s := helper.IdVarsMux(w, r); s {
-		item, err := service.GetItembyId(id)
+		item, err := i.Service.GetItembyId(id)
 		if err != nil {
 			helper.RecordNotFound(w, err)
 			return
@@ -35,7 +42,7 @@ func GetItembyId(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func InsertItem(w http.ResponseWriter, r *http.Request) {
+func (i *ItemController) InsertItem(w http.ResponseWriter, r *http.Request) {
 	var item entity.Item
 	err := json.NewDecoder(r.Body).Decode(&item)
 	if err != nil {
@@ -44,7 +51,8 @@ func InsertItem(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	if err := service.InsertItem(item); err != nil {
+	item.IsSale = 1
+	if err := i.Service.InsertItem(&item); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -53,7 +61,7 @@ func InsertItem(w http.ResponseWriter, r *http.Request) {
 	helper.ResponseWrite(w, &item, message)
 }
 
-func UpdateItem(w http.ResponseWriter, r *http.Request) {
+func (i *ItemController) UpdateItem(w http.ResponseWriter, r *http.Request) {
 	if id, s := helper.IdVarsMux(w, r); s {
 		var item entity.Item
 		err := json.NewDecoder(r.Body).Decode(&item)
@@ -63,12 +71,9 @@ func UpdateItem(w http.ResponseWriter, r *http.Request) {
 		}
 		defer r.Body.Close()
 
-		if errId, err := repo.UpdateItem(id, item); errId != nil {
+		err = i.Service.UpdateItem(id, &item)
+		if err != nil {
 			helper.RecordNotFound(w, err)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
 			return
 		}
 
@@ -77,8 +82,8 @@ func UpdateItem(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func SalesItem(w http.ResponseWriter, r *http.Request) {
-	result, err := service.GetItembyStatus(1)
+func (i *ItemController) SalesItem(w http.ResponseWriter, r *http.Request) {
+	result, err := i.Service.GetItembyStatus(1)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -89,37 +94,83 @@ func SalesItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	helper.ResponseWrite(w, result, "Success get all sale items")
+	helper.ResponseWrite(w, result, "Success get all sales item")
 }
 
-func SoldoutsItem(w http.ResponseWriter, r *http.Request) {
-	result, err := service.GetItembyStatus(0)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	if result == nil || len(result) < 1 {
-		w.Write([]byte("No item found!"))
-		return
-	}
-
-	helper.ResponseWrite(w, result, "Success get all soldout items")
-}
-
-func DeleteItem(w http.ResponseWriter, r *http.Request) {
+func (i *ItemController) ChangeItemtoSale(w http.ResponseWriter, r *http.Request) {
 	if id, s := helper.IdVarsMux(w, r); s {
-		if _, err := service.GetItembyId(id); err != nil {
-			helper.RecordNotFound(w, err)
-			return
-		}
-
-		if err := service.DeleteItem(id); err != nil {
+		err := i.Service.ChangeStatusItem(id, 1)
+		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
+		message := fmt.Sprintf("Item %d is sale now", id)
+		helper.ResponseWrite(w, id, message)
+	}
+}
+
+func (i *ItemController) SoldoutsItem(w http.ResponseWriter, r *http.Request) {
+	result, err := i.Service.GetItembyStatus(0)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if result == nil || len(result) < 1 {
+		w.Write([]byte("No item found!"))
+		return
+	}
+
+	helper.ResponseWrite(w, result, "Success get all soldouts item")
+}
+
+func (i *ItemController) ChangeItemtoSoldout(w http.ResponseWriter, r *http.Request) {
+	if id, s := helper.IdVarsMux(w, r); s {
+		err := i.Service.ChangeStatusItem(id, 0)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		message := fmt.Sprintf("Item %d is soldout now", id)
+		helper.ResponseWrite(w, id, message)
+	}
+}
+
+func (i *ItemController) SoftDeleteItem(w http.ResponseWriter, r *http.Request) {
+	if id, s := helper.IdVarsMux(w, r); s {
+		if err := i.Service.SoftDeleteItem(id); err != nil {
+			helper.RecordNotFound(w, err)
+			return
+		}
+
 		message := fmt.Sprintf("Success delete item %d", id)
+		helper.ResponseWrite(w, id, message)
+	}
+}
+
+func (i *ItemController) RestoreDeletedItem(w http.ResponseWriter, r *http.Request) {
+	if id, s := helper.IdVarsMux(w, r); s {
+		err := i.Service.RestoreDeletedItem(id)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		message := fmt.Sprintf("Success restore item %d", id)
+		helper.ResponseWrite(w, id, message)
+	}
+}
+
+func (i *ItemController) DeleteItem(w http.ResponseWriter, r *http.Request) {
+	if id, s := helper.IdVarsMux(w, r); s {
+		if err := i.Service.DeleteItem(id); err != nil {
+			helper.RecordNotFound(w, err)
+			return
+		}
+
+		message := fmt.Sprintf("Success delete permanently item %d", id)
 		helper.ResponseWrite(w, id, message)
 	}
 }

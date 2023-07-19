@@ -2,35 +2,83 @@ package service
 
 import (
 	"gostore/entity"
+	"gostore/helper"
 	"gostore/repo"
 )
 
-func GetAllItems() ([]entity.ItemResponse, error) {
-	items, err := repo.GetAllItem()
+type ItemService struct {
+	Repo repo.ItemRepository
+}
+
+func NewItemService(r repo.ItemRepository) *ItemService {
+	return &ItemService{
+		Repo: r,
+	}
+}
+
+func (i *ItemService) GetAllItems() ([]entity.ItemResponse, error) {
+	items, err := i.Repo.GetAllItems()
 	return items, err
 }
 
-func GetItembyId(id int64) (entity.ItemResponse, error) {
-	item, err := repo.GetItem(id)
+func (i *ItemService) GetItembyId(id int) (entity.ItemResponse, error) {
+	item, err := i.Repo.GetItemById(id)
 	return item, err
 }
 
-func GetItembyStatus(s int) ([]entity.ItemResponse, error) {
-	items, err := repo.GetItembyStatus(s)
+func (i *ItemService) GetItembyStatus(s int) ([]entity.ItemResponse, error) {
+	items, err := i.Repo.GetItemByStatus(s)
 	return items, err
 }
 
-func InsertItem(item entity.Item) error {
-	err := repo.InsertItem(item)
+func (i *ItemService) InsertItem(item *entity.Item) error {
+	err := i.Repo.InsertItem(item)
 	return err
 }
 
-func UpdateItem(id int64, item entity.Item) (error, error) {
-	errId, err := repo.UpdateItem(id, item)
-	return errId, err
+func (i *ItemService) UpdateItem(id int, item *entity.Item) error {
+	_, err := i.Repo.GetItemById(id)
+	if err != nil {
+		return err
+	}
+
+	err = i.Repo.UpdateItem(id, item)
+	return err
 }
 
-func DeleteItem(id int64) error {
-	err := repo.DeleteItem(id)
+func (i *ItemService) ChangeStatusItem(id, s int) error {
+	itemCheck, err := i.Repo.GetItemById(id)
+	if err != nil {
+		return err
+	} else if itemCheck.IsSale == s {
+		return helper.ErrChangeStatusItem
+	}
+
+	err = i.Repo.ChangeStatusItem(id, s)
+	return err
+}
+
+func (i *ItemService) SoftDeleteItem(id int) error {
+	_, err := i.Repo.GetItemById(id)
+	if err != nil {
+		return helper.ErrRecDeleted
+	}
+
+	err = i.Repo.SoftDeleteItem(id)
+	return err
+}
+
+func (i *ItemService) RestoreDeletedItem(id int) error {
+	itemCheck, err := i.Repo.GetItemById(id)
+	if err == nil || itemCheck.IsSale == 1 {
+		return helper.ErrRecRestored
+	}
+
+	err = i.Repo.RestoreDeletedItem(id)
+	return err
+}
+
+func (i *ItemService) DeleteItem(id int) error {
+	err := i.Repo.DeleteItem(id)
 	return err
 }
