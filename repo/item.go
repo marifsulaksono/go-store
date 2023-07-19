@@ -30,12 +30,7 @@ func (i *ItemRepository) GetItemById(id int) (entity.ItemResponse, error) {
 
 func (i *ItemRepository) GetItemByStatus(s int) ([]entity.ItemResponse, error) {
 	var items []entity.ItemResponse
-	var err error
-	if s == 1 {
-		err = i.DB.Where("is_sale = ?", s).Preload("Category", "id NOT IN (?)", "cancelled").Find(&items).Error
-	} else if s == 0 {
-		err = i.DB.Unscoped().Where("is_sale = ? AND delete_at = null", s).Preload("Category", "id NOT IN (?)", "cancelled").Find(&items).Error
-	}
+	err := i.DB.Where("is_sale = ?", s).Preload("Category", "id NOT IN (?)", "cancelled").Find(&items).Error
 	return items, err
 }
 
@@ -57,7 +52,7 @@ func (i *ItemRepository) UpdateItem(id int, item *entity.Item) error {
 }
 
 func (i *ItemRepository) ChangeStatusItem(id, s int) error {
-	err := i.DB.Model(&entity.Item{}).Where("id = ?", id).Update("is_sale = ?", s).Error
+	err := i.DB.Model(&entity.Item{}).Where("id = ?", id).Update("is_sale", s).Error
 	return err
 }
 
