@@ -29,9 +29,9 @@ func ResponseWrite(w http.ResponseWriter, data interface{}, message string) {
 	w.Write(jsonData)
 }
 
-func IdVarsMux(w http.ResponseWriter, r *http.Request) (int64, bool) {
+func IdVarsMux(w http.ResponseWriter, r *http.Request) (int, bool) {
 	vars := mux.Vars(r)
-	id, err := strconv.ParseInt(vars["id"], 10, 0)
+	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("parameter id isn't valid!"))
