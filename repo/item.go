@@ -34,6 +34,13 @@ func (i *ItemRepository) GetItemByStatus(s int) ([]entity.ItemResponse, error) {
 	return items, err
 }
 
+func (i *ItemRepository) SearchItem(keyword, order, sortBy string, minPrice, maxPrice, limit, offset int) ([]entity.ItemResponse, error) {
+	var items []entity.ItemResponse
+	err := i.DB.Where("name LIKE ? AND price BETWEEN ? AND ?", "%"+keyword+"%", minPrice, maxPrice).Order(sortBy +
+		" " + order).Limit(limit).Offset(offset).Preload("Category").Find(&items).Error
+	return items, err
+}
+
 func (i *ItemRepository) InsertItem(item *entity.Item) error {
 	err := i.DB.Create(item).Error
 	return err

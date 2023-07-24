@@ -31,6 +31,33 @@ func (i *ItemService) GetItembyStatus(s int) ([]entity.ItemResponse, error) {
 	return items, err
 }
 
+func (i *ItemService) SearchItem(keyword, order, sortBy string, minPrice, maxPrice, limit, page int) ([]entity.ItemResponse, error) {
+	if order != "DESC" {
+		order = "ASC"
+	}
+
+	if sortBy != "name" && sortBy != "stock" && sortBy != "price" {
+		sortBy = "name"
+	}
+
+	if limit <= 0 {
+		limit = 5
+	}
+
+	if page <= 0 {
+		page = 0
+	}
+
+	offset := (page - 1) * limit
+
+	items, err := i.Repo.SearchItem(keyword, order, sortBy, minPrice, maxPrice, limit, offset)
+	return items, err
+
+	// DB.Where("name LIKE ? AND price BETWEEN ? AND ?", "%"+keyword+"%", minPrice, maxPrice).Order(sortBy +
+	// " " + order).Limit(limit).Offset(page).Preload("Category").Find(&items)
+	// DB.Where("name LIKE ? AND price BETWEEN ? AND ?", "%"+keyword+"%", minPrice, maxPrice).Order(sortBy + " " + order).Limit(limit).Offset(page).Preload("Category").Find(&items)
+}
+
 func (i *ItemService) InsertItem(item *entity.Item) error {
 	err := i.Repo.InsertItem(item)
 	return err

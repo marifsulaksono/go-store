@@ -6,7 +6,10 @@ import (
 	"gostore/entity"
 	"gostore/helper"
 	"gostore/service"
+	"math"
 	"net/http"
+	"strconv"
+	"strings"
 )
 
 type ItemController struct {
@@ -40,6 +43,49 @@ func (i *ItemController) GetItembyId(w http.ResponseWriter, r *http.Request) {
 		message := fmt.Sprintf("Success get item %d", id)
 		helper.ResponseWrite(w, item, message)
 	}
+}
+
+func (i *ItemController) SearchItem(w http.ResponseWriter, r *http.Request) {
+	// var keyword, sortBy, order string
+	// var minPrice, maxPrice, limit, page int
+	// var err error
+	keyword := ""
+	keyword = r.URL.Query().Get("keyword")
+	sortBy := r.URL.Query().Get("sortBy")
+	order := strings.ToUpper(r.URL.Query().Get("order"))
+	minPrice, err := strconv.Atoi(r.URL.Query().Get("minPrice"))
+	if err != nil || minPrice < 0 {
+		minPrice = 0
+		fmt.Println(err)
+	}
+	maxPrice, err := strconv.Atoi(r.URL.Query().Get("maxPrice"))
+	if err != nil {
+		maxPrice = math.MaxInt
+	} else if maxPrice < minPrice {
+		http.Error(w, "max price must be higher than min price", http.StatusBadRequest)
+		return
+	}
+	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
+	if err != nil {
+		http.Error(w, "invalid price integer", http.StatusBadRequest)
+		return
+	}
+	page, err := strconv.Atoi(r.URL.Query().Get("page"))
+	if err != nil {
+		http.Error(w, "invalid price integer", http.StatusBadRequest)
+		return
+	}
+	fmt.Printf("%v, %v, %v, %v, %v, %v, %v | ", keyword, sortBy, order, minPrice, maxPrice, limit, page)
+
+	items, err := i.Service.SearchItem(keyword, order, sortBy, minPrice, maxPrice, limit, page)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	message := fmt.Sprintf("Success search item with keyword %v", keyword)
+	helper.ResponseWrite(w, items, message)
+	// localhost:49999/item/search?keyword=tas&sortBy=name&order=desc&minPrice=0&maxPrice=1000000&limit=5&page=0
 }
 
 func (i *ItemController) InsertItem(w http.ResponseWriter, r *http.Request) {

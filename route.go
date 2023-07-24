@@ -42,15 +42,19 @@ func routeInit(conn *gorm.DB) *mux.Router {
 	r.HandleFunc("/login", userController.Login).Methods(http.MethodPost)       // login and create JSON Web Token (JWT)
 
 	// ===================== Router Item =======================
-	r.HandleFunc("/items", middleware.JWTMiddleware(itemController.GetItems)).Methods(http.MethodGet)                       // get all sales & soldout item data
-	r.HandleFunc("/item/sales", middleware.JWTMiddleware(itemController.SalesItem)).Methods(http.MethodGet)                 // get all sale item data
-	r.HandleFunc("/item/soldouts", middleware.JWTMiddleware(itemController.SoldoutsItem)).Methods(http.MethodGet)           // get all soldout item data
-	r.HandleFunc("/item/{id}", middleware.JWTMiddleware(itemController.GetItembyId)).Methods(http.MethodGet)                // get item data by id
-	r.HandleFunc("/item/restore/{id}", middleware.JWTMiddleware(itemController.RestoreDeletedItem)).Methods(http.MethodPut) // restore deleted item data by id
-	r.HandleFunc("/item/delete/{id}", middleware.JWTMiddleware(itemController.DeleteItem)).Methods(http.MethodDelete)       // hard delete item data by id
-	r.HandleFunc("/item", middleware.JWTMiddleware(itemController.InsertItem)).Methods(http.MethodPost)                     // create new item data
-	r.HandleFunc("/item/{id}", middleware.JWTMiddleware(itemController.UpdateItem)).Methods(http.MethodPut)                 // update item data by id
-	r.HandleFunc("/item/{id}", middleware.JWTMiddleware(itemController.SoftDeleteItem)).Methods(http.MethodDelete)          // soft delete item data by id
+	r.HandleFunc("/items", middleware.JWTMiddleware(itemController.GetItems)).Methods(http.MethodGet)                         // get all sales & soldout item data
+	r.HandleFunc("/item/sales", middleware.JWTMiddleware(itemController.SalesItem)).Methods(http.MethodGet)                   // get all sale item data
+	r.HandleFunc("/item/soldouts", middleware.JWTMiddleware(itemController.SoldoutsItem)).Methods(http.MethodGet)             // get all soldout item data
+	r.HandleFunc("/item/search", middleware.JWTMiddleware(itemController.SearchItem)).Methods(http.MethodGet)                 // get all soldout item data
+	r.HandleFunc("/item/filter", middleware.JWTMiddleware(itemController.SearchItem)).Methods(http.MethodGet)                 // get all soldout item data
+	r.HandleFunc("/item/sales/{id}", middleware.JWTMiddleware(itemController.ChangeItemtoSale)).Methods(http.MethodPut)       // get all sale item data
+	r.HandleFunc("/item/soldouts/{id}", middleware.JWTMiddleware(itemController.ChangeItemtoSoldout)).Methods(http.MethodPut) // get all sale item data
+	r.HandleFunc("/item/{id}", middleware.JWTMiddleware(itemController.GetItembyId)).Methods(http.MethodGet)                  // get item data by id
+	r.HandleFunc("/item/restore/{id}", middleware.JWTMiddleware(itemController.RestoreDeletedItem)).Methods(http.MethodPut)   // restore deleted item data by id
+	r.HandleFunc("/item/delete/{id}", middleware.JWTMiddleware(itemController.DeleteItem)).Methods(http.MethodDelete)         // hard delete item data by id
+	r.HandleFunc("/item", middleware.JWTMiddleware(itemController.InsertItem)).Methods(http.MethodPost)                       // create new item data
+	r.HandleFunc("/item/{id}", middleware.JWTMiddleware(itemController.UpdateItem)).Methods(http.MethodPut)                   // update item data by id
+	r.HandleFunc("/item/{id}", middleware.JWTMiddleware(itemController.SoftDeleteItem)).Methods(http.MethodDelete)            // soft delete item data by id
 
 	// ==================== Router Category ====================
 	r.HandleFunc("/categories", middleware.JWTMiddleware(categoryController.GetAllCategories)).Methods(http.MethodGet) // filter items by category
