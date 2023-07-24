@@ -40,14 +40,6 @@ func (i *ItemService) SearchItem(keyword, order, sortBy string, minPrice, maxPri
 		sortBy = "name"
 	}
 
-	if limit <= 0 {
-		limit = 5
-	}
-
-	if page <= 0 {
-		page = 0
-	}
-
 	offset := (page - 1) * limit
 
 	items, err := i.Repo.SearchItem(keyword, order, sortBy, minPrice, maxPrice, limit, offset)

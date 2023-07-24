@@ -66,14 +66,12 @@ func (i *ItemController) SearchItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
-	if err != nil {
-		http.Error(w, "invalid price integer", http.StatusBadRequest)
-		return
+	if err != nil || limit <= 0 {
+		limit = 10
 	}
 	page, err := strconv.Atoi(r.URL.Query().Get("page"))
-	if err != nil {
-		http.Error(w, "invalid price integer", http.StatusBadRequest)
-		return
+	if err != nil || page <= 0 {
+		page = 1
 	}
 	fmt.Printf("%v, %v, %v, %v, %v, %v, %v | ", keyword, sortBy, order, minPrice, maxPrice, limit, page)
 
