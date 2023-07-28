@@ -24,7 +24,7 @@ func (tr *TransactionRepository) GetTransactions() ([]entity.AllTransactionRespo
 
 func (tr *TransactionRepository) GetTransactionById(id int) (entity.Transaction, error) {
 	var result entity.Transaction
-	err := tr.DB.Where("id = ?", id).Preload("Items.Item").Preload("Items.Item.Category").First(&result).Error
+	err := tr.DB.Where("id = ?", id).Preload("Items.Product").Preload("Items.Product.Category").Preload("ShippingAddress").First(&result).Error
 	return result, err
 }
 

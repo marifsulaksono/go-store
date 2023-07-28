@@ -55,13 +55,14 @@ func (tr *TransactionController) CreateTransaction(w http.ResponseWriter, r *htt
 	}
 	defer r.Body.Close()
 
-	if err := tr.Service.CreateTransaction(userId, &transaction); err != nil {
+	result, err := tr.Service.CreateTransaction(userId, &transaction)
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	message := fmt.Sprintf("Success create new transaction by user %d!", userId)
-	helper.ResponseWrite(w, transaction, message)
+	helper.ResponseWrite(w, result, message)
 }
 
 // func (tr *TransactionController) UpdateTransaction(w http.ResponseWriter, r *http.Request) {

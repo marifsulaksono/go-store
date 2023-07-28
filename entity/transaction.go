@@ -7,20 +7,22 @@ import (
 )
 
 type Transaction struct {
-	Id       int               `json:"id"`
-	Date     time.Time         `json:"date"`
-	Total    int               `json:"total"`
-	Status   string            `json:"status"`
-	UserId   int               `json:"user_id"`
-	Items    []TransactionItem `json:"items" gorm:"foreignKey:TransactionId;references:Id"`
-	DeleteAt gorm.DeletedAt    `json:"-"`
+	Id                int               `json:"id"`
+	Date              time.Time         `json:"date"`
+	Total             int               `json:"total"`
+	Status            string            `json:"status"`
+	ShippingAddressId int               `json:"shipping_address_id"`
+	ShippingAddress   ShippingAddress   `json:"shipping_address"`
+	UserId            int               `json:"user_id"`
+	Items             []TransactionItem `json:"items" gorm:"foreignKey:TransactionId;references:Id"`
+	DeleteAt          gorm.DeletedAt    `json:"-"`
 }
 
 type TransactionItem struct {
 	Id            int                        `json:"id"`
 	TransactionId int                        `json:"-"`
 	ProductId     int                        `json:"product_id"`
-	Item          ProductTransactionResponse `gorm:"foreignKey:ProductId" json:"items"`
+	Product       ProductTransactionResponse `gorm:"foreignKey:ProductId" json:"items"`
 	Qty           int                        `json:"qty"`
 	Price         int                        `json:"price"`
 	Subtotal      int                        `json:"subtotal"`
@@ -31,15 +33,16 @@ type AllTransactionResponse struct {
 	Date     time.Time                    `json:"date"`
 	Total    int                          `json:"total"`
 	Status   string                       `json:"status"`
-	UserId   int                          `json:"user_id"`
 	Items    []AllTransactionItemResponse `json:"transaction_items" gorm:"foreignKey:TransactionId;references:Id"`
 	DeleteAt gorm.DeletedAt               `json:"-"`
 }
 
 type AllTransactionItemResponse struct {
-	Id            int `json:"id"`
-	TransactionId int `json:"transaction_id"`
-	Subtotal      int `json:"subtotal"`
+	Id            int                        `json:"id"`
+	TransactionId int                        `json:"-"`
+	ProductId     int                        `json:"product_id"`
+	Product       ProductTransactionResponse `gorm:"foreignKey:ProductId" json:"items"`
+	Subtotal      int                        `json:"subtotal"`
 }
 
 func (AllTransactionResponse) TableName() string {
