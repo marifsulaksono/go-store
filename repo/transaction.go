@@ -18,13 +18,13 @@ func NewTransactionRepository(db *gorm.DB) *TransactionRepository {
 
 func (tr *TransactionRepository) GetTransactions() ([]entity.AllTransactionResponse, error) {
 	var result []entity.AllTransactionResponse
-	err := tr.DB.Preload("TransactionItem").Find(&result).Error
+	err := tr.DB.Preload("Items").Find(&result).Error
 	return result, err
 }
 
-func (tr *TransactionRepository) GetTransactionById(id int) (entity.TransactionResponseId, error) {
-	var result entity.TransactionResponseId
-	err := tr.DB.Where("id = ?", id).Preload("TransactionItem").Preload("TransactionItem.Item").First(&result).Error
+func (tr *TransactionRepository) GetTransactionById(id int) (entity.Transaction, error) {
+	var result entity.Transaction
+	err := tr.DB.Where("id = ?", id).Preload("Items.Item").Preload("Items.Item.Category").First(&result).Error
 	return result, err
 }
 
@@ -33,14 +33,14 @@ func (tr *TransactionRepository) CreateTransaction(transaction *entity.Transacti
 	return err
 }
 
-func (tr *TransactionRepository) UpdateTransaction(id int, transaction *entity.Transaction) error {
-	err := tr.DB.Model(entity.Transaction{}).Where("id = ?", id).Updates(map[string]interface{}{
-		"total":     transaction.Total,
-		"status":    transaction.Status,
-		"update_at": transaction.UpdateAt,
-	}).Error
-	return err
-}
+// func (tr *TransactionRepository) UpdateTransaction(id int, transaction *entity.Transaction) error {
+// 	err := tr.DB.Model(entity.Transaction{}).Where("id = ?", id).Updates(map[string]interface{}{
+// 		"total":     transaction.Total,
+// 		"status":    transaction.Status,
+// 		"update_at": transaction.UpdateAt,
+// 	}).Error
+// 	return err
+// }
 
 func (tr *TransactionRepository) SoftDeleteTransaction(id int) error {
 	err := tr.DB.Where("id = ?", id).Delete(&entity.Transaction{}).Error

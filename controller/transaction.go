@@ -8,7 +8,6 @@ import (
 	"gostore/middleware"
 	"gostore/service"
 	"net/http"
-	"time"
 )
 
 type TransactionController struct {
@@ -56,9 +55,7 @@ func (tr *TransactionController) CreateTransaction(w http.ResponseWriter, r *htt
 	}
 	defer r.Body.Close()
 
-	transaction.Date = time.Now()
-	transaction.UserId = userId
-	if err := tr.Service.CreateTransaction(&transaction); err != nil {
+	if err := tr.Service.CreateTransaction(userId, &transaction); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -67,34 +64,33 @@ func (tr *TransactionController) CreateTransaction(w http.ResponseWriter, r *htt
 	helper.ResponseWrite(w, transaction, message)
 }
 
-func (tr *TransactionController) UpdateTransaction(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	userId := ctx.Value(middleware.GOSTORE_USERID).(int)
-	if id, s := helper.IdVarsMux(w, r); s {
-		var transaction entity.Transaction
-		err := json.NewDecoder(r.Body).Decode(&transaction)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		defer r.Body.Close()
+// func (tr *TransactionController) UpdateTransaction(w http.ResponseWriter, r *http.Request) {
+// 	ctx := r.Context()
+// 	userId := ctx.Value(middleware.GOSTORE_USERID).(int)
+// 	if id, s := helper.IdVarsMux(w, r); s {
+// 		var transaction entity.Transaction
+// 		err := json.NewDecoder(r.Body).Decode(&transaction)
+// 		if err != nil {
+// 			http.Error(w, err.Error(), http.StatusInternalServerError)
+// 			return
+// 		}
+// 		defer r.Body.Close()
 
-		transaction.UpdateAt = time.Now()
-		fmt.Println(transaction.UpdateAt)
-		if err := tr.Service.UpdateTransaction(id, &transaction, userId); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+// 		fmt.Println(transaction.UpdateAt)
+// 		if err := tr.Service.UpdateTransaction(id, &transaction, userId); err != nil {
+// 			http.Error(w, err.Error(), http.StatusInternalServerError)
+// 			return
+// 		}
 
-		data := map[string]any{
-			"total":      transaction.Total,
-			"status":     transaction.Status,
-			"updated_at": transaction.UpdateAt,
-		}
-		message := fmt.Sprintf("Success update transaction %d!", id)
-		helper.ResponseWrite(w, data, message)
-	}
-}
+// 		data := map[string]any{
+// 			"total":      transaction.Total,
+// 			"status":     transaction.Status,
+// 			"updated_at": transaction.UpdateAt,
+// 		}
+// 		message := fmt.Sprintf("Success update transaction %d!", id)
+// 		helper.ResponseWrite(w, data, message)
+// 	}
+// }
 
 func (tr *TransactionController) SoftDeleteTransaction(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()

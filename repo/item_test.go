@@ -10,87 +10,87 @@ import (
 	"gorm.io/gorm"
 )
 
-func createItem(t *testing.T) entity.Item {
-	arg := entity.Item{
+func createProduct(t *testing.T) entity.Product {
+	arg := entity.Product{
 		Name:       "HP Iphone",
 		Stock:      10,
 		Price:      15000000,
-		IsSale:     1,
+		Status:     "sale",
 		CategoryId: 3,
 	}
 
-	err := testDB.InsertItem(&arg)
-	var item entity.Item
-	_ = testDB.DB.Last(&item)
-	fmt.Println(item)
+	err := testDB.InsertProduct(&arg)
+	var product entity.Product
+	_ = testDB.DB.Last(&product)
+	fmt.Println(product)
 
 	require.NoError(t, err)
-	require.NotEmpty(t, item)
+	require.NotEmpty(t, product)
 
-	require.Equal(t, arg.Name, item.Name)
-	require.Equal(t, arg.Stock, item.Stock)
-	require.Equal(t, arg.Price, item.Price)
-	require.Equal(t, arg.IsSale, item.IsSale)
-	require.Equal(t, arg.CategoryId, item.CategoryId)
+	require.Equal(t, arg.Name, product.Name)
+	require.Equal(t, arg.Stock, product.Stock)
+	require.Equal(t, arg.Price, product.Price)
+	require.Equal(t, arg.Status, product.Status)
+	require.Equal(t, arg.CategoryId, product.CategoryId)
 
-	require.NotZero(t, item.Id)
+	require.NotZero(t, product.Id)
 
-	return item
+	return product
 }
 
-func TestInsertItem(t *testing.T) {
-	createItem(t)
+func TestInsertProduct(t *testing.T) {
+	createProduct(t)
 }
 
-func TestGetItem(t *testing.T) {
-	item1 := createItem(t)
-	item2, err := testDB.GetItemById(item1.Id)
+func TestGetProduct(t *testing.T) {
+	product1 := createProduct(t)
+	product2, err := testDB.GetProductById(product1.Id)
 
 	require.NoError(t, err)
-	require.NotEmpty(t, item2)
+	require.NotEmpty(t, product2)
 
-	require.Equal(t, item1.Id, item2.Id)
-	require.Equal(t, item1.Name, item2.Name)
-	require.Equal(t, item1.Stock, item2.Stock)
-	require.Equal(t, item1.Price, item2.Price)
-	require.Equal(t, item1.IsSale, item2.IsSale)
-	require.Equal(t, item1.CategoryId, item2.CategoryId)
+	require.Equal(t, product1.Id, product2.Id)
+	require.Equal(t, product1.Name, product2.Name)
+	require.Equal(t, product1.Stock, product2.Stock)
+	require.Equal(t, product1.Price, product2.Price)
+	require.Equal(t, product1.Status, product2.Status)
+	require.Equal(t, product1.CategoryId, product2.CategoryId)
 }
 
-func TestUpdateITem(t *testing.T) {
-	newItem := createItem(t)
-	arg := entity.Item{
-		// get the newItem prop if no changes
-		Id:         newItem.Id, // no change
+func TestUpdateProduct(t *testing.T) {
+	newProduct := createProduct(t)
+	arg := entity.Product{
+		// get the newProduct prop if no changes
+		Id:         newProduct.Id, // no change
 		Name:       "Cleo Botol",
 		Stock:      100,
 		Price:      4000,
-		IsSale:     newItem.IsSale,     // no change
-		CategoryId: newItem.CategoryId, // no change
+		Status:     newProduct.Status,     // no change
+		CategoryId: newProduct.CategoryId, // no change
 	}
 
-	err := testDB.UpdateItem(newItem.Id, &arg)
+	err := testDB.UpdateProduct(newProduct.Id, &arg)
 	require.NoError(t, err)
 
-	item, err := testDB.GetItemById(newItem.Id)
+	product, err := testDB.GetProductById(newProduct.Id)
 	require.NoError(t, err)
-	require.NotEmpty(t, item)
+	require.NotEmpty(t, product)
 
-	require.Equal(t, arg.Id, item.Id)
-	require.Equal(t, arg.Name, item.Name)
-	require.Equal(t, arg.Stock, item.Stock)
-	require.Equal(t, arg.Price, item.Price)
-	require.Equal(t, newItem.IsSale, item.IsSale)
-	require.Equal(t, newItem.CategoryId, item.CategoryId)
+	require.Equal(t, arg.Id, product.Id)
+	require.Equal(t, arg.Name, product.Name)
+	require.Equal(t, arg.Stock, product.Stock)
+	require.Equal(t, arg.Price, product.Price)
+	require.Equal(t, newProduct.Status, product.Status)
+	require.Equal(t, newProduct.CategoryId, product.CategoryId)
 }
 
-func TestDeleteItem(t *testing.T) {
-	newItem := createItem(t)
-	err := testDB.DeleteItem(newItem.Id)
+func TestDeleteProduct(t *testing.T) {
+	newProduct := createProduct(t)
+	err := testDB.DeleteProduct(newProduct.Id)
 	require.NoError(t, err)
 
-	checkItem, err := testDB.GetItemById(newItem.Id)
+	checkProduct, err := testDB.GetProductById(newProduct.Id)
 	require.Error(t, err)
 	require.EqualError(t, err, gorm.ErrRecordNotFound.Error())
-	require.Empty(t, checkItem)
+	require.Empty(t, checkProduct)
 }

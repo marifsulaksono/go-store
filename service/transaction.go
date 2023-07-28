@@ -1,18 +1,23 @@
 package service
 
 import (
+	"errors"
+	"fmt"
 	"gostore/entity"
 	"gostore/helper"
 	"gostore/repo"
+	"time"
 )
 
 type TransactionService struct {
-	Repo repo.TransactionRepository
+	Repo        repo.TransactionRepository
+	ProductRepo repo.ProductRepository
 }
 
-func NewTransactionService(r repo.TransactionRepository) *TransactionService {
+func NewTransactionService(r repo.TransactionRepository, p repo.ProductRepository) *TransactionService {
 	return &TransactionService{
-		Repo: r,
+		Repo:        r,
+		ProductRepo: p,
 	}
 }
 
@@ -21,26 +26,63 @@ func (tr *TransactionService) GetTransactions() ([]entity.AllTransactionResponse
 	return result, err
 }
 
-func (tr *TransactionService) GetTransactionById(id int) (entity.TransactionResponseId, error) {
+func (tr *TransactionService) GetTransactionById(id int) (entity.Transaction, error) {
 	result, err := tr.Repo.GetTransactionById(id)
 	return result, err
 }
 
-func (tr *TransactionService) CreateTransaction(transaction *entity.Transaction) error {
-	err := tr.Repo.CreateTransaction(transaction)
-	return err
-}
+func (tr *TransactionService) CreateTransaction(userId int, items *entity.Transaction) error {
+	var transaction entity.Transaction
+	var total int
+	for i, trItem := range items.Items {
+		product, err := tr.ProductRepo.GetProductById(trItem.ProductId)
+		if err != nil {
+			productNotFound := fmt.Sprintf("Product %d not found!", trItem.ProductId)
+			return errors.New(productNotFound)
+		} else if product.Stock < trItem.Qty {
+			return helper.ErrStockNotEnough
+		}
+		product.Stock -= trItem.Qty
+		product.Sold += trItem.Qty
+		trItem.Subtotal = product.Price * trItem.Qty
+		total += trItem.Subtotal
+		items.Items[i].Price = product.Price
+		items.Items[i].Subtotal = trItem.Subtotal
+		fmt.Println(product)
+		if err := tr.ProductRepo.UpdateStockandSold(trItem.ProductId, &product); err != nil {
+			return err
+		}
 
-func (tr *TransactionService) UpdateTransaction(id int, transaction *entity.Transaction, userId int) error {
-	trxId, err := tr.Repo.GetTransactionById(id)
-	if trxId.UserId != userId {
-		return helper.ErrAccDeny
-	} else if err == nil {
-		err = tr.Repo.UpdateTransaction(id, transaction)
+		if product.Stock == 0 {
+			err := tr.ProductRepo.ChangeStatusProduct(trItem.ProductId, "soldout")
+			if err != nil {
+				return err
+			}
+		}
 	}
 
+	transaction.Date = time.Now()
+	transaction.Total = total
+	transaction.Status = "waiting"
+	transaction.UserId = userId
+	transaction.Items = items.Items
+
+	err := tr.Repo.CreateTransaction(&transaction)
 	return err
 }
+
+// func (tr *TransactionService) UpdateTransaction(id int, transaction *entity.Transaction, userId int) error {
+// 	trxId, err := tr.Repo.GetTransactionById(id)
+// 	if trxId.UserId != userId {
+// 		return helper.ErrAccDeny
+// 	} else if err != nil {
+// 		return err
+// 	}
+
+// 	transaction.UpdateAt = time.Now()
+// 	err = tr.Repo.UpdateTransaction(id, transaction)
+// 	return err
+// }
 
 func (tr *TransactionService) SoftDeleteTransaction(id int, user int) error {
 	trx, err := tr.Repo.GetTransactionById(id)

@@ -79,7 +79,7 @@ func (u *UserController) Login(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Create token claim
-		jwtExpTime := time.Now().Add(time.Hour * 1)
+		jwtExpTime := time.Now().Add(time.Hour * 24)
 		claims := &middleware.JWTClaim{
 			Id:       userLogin.Id,
 			Username: userLogin.Username,
@@ -103,4 +103,73 @@ func (u *UserController) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Error(w, "Method isn't valid!", http.StatusBadRequest)
+}
+
+func (u *UserController) GetShippingAddressByUserId(w http.ResponseWriter, r *http.Request) {
+	userId := r.Context().Value(middleware.GOSTORE_USERID).(int)
+	result, err := u.Service.GetShippingAddressByUserId(userId)
+	if err != nil {
+		helper.RecordNotFound(w, err)
+		return
+	}
+
+	message := fmt.Sprintf("Success get shipping address on user %d", userId)
+	helper.ResponseWrite(w, result, message)
+}
+
+func (u *UserController) InsertShippingAddress(w http.ResponseWriter, r *http.Request) {
+	userId := r.Context().Value(middleware.GOSTORE_USERID).(int)
+
+	var SA entity.ShippingAddress
+	err := json.NewDecoder(r.Body).Decode(&SA)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer r.Body.Close()
+
+	SA.UserId = userId
+	if err := u.Service.InsertShippingAddress(&SA); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	message := fmt.Sprintf("Success add shipping address to user %d", userId)
+	helper.ResponseWrite(w, SA, message)
+}
+
+func (u *UserController) UpdateShippingAddress(w http.ResponseWriter, r *http.Request) {
+	userId := r.Context().Value(middleware.GOSTORE_USERID).(int)
+	if id, s := helper.IdVarsMux(w, r); s {
+		var SA entity.ShippingAddress
+		err := json.NewDecoder(r.Body).Decode(&SA)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer r.Body.Close()
+
+		result, err := u.Service.UpdateShippingAddress(userId, id, &SA)
+		if err != nil {
+			helper.RecordNotFound(w, err)
+			return
+		}
+
+		message := fmt.Sprintf("Success update shipping address on user %d", userId)
+		helper.ResponseWrite(w, result, message)
+	}
+}
+
+func (u *UserController) DeleteShippingAddress(w http.ResponseWriter, r *http.Request) {
+	userId := r.Context().Value(middleware.GOSTORE_USERID).(int)
+	if id, s := helper.IdVarsMux(w, r); s {
+		err := u.Service.DeleteShippingAddress(userId, id)
+		if err != nil {
+			helper.RecordNotFound(w, err)
+			return
+		}
+
+		message := fmt.Sprintf("Success delete shipping address on user %d", userId)
+		helper.ResponseWrite(w, id, message)
+	}
 }
