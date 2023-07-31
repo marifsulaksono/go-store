@@ -36,7 +36,13 @@ func (p *ProductRepository) GetDeletedProduct(id int) (entity.Product, error) {
 
 func (p *ProductRepository) GetProductByStatus(s string) ([]entity.Product, error) {
 	var products []entity.Product
-	err := p.DB.Where("status = ?", s).Preload("Category", "id NOT IN (?)", "cancelled").Find(&products).Error
+	err := p.DB.Where("status = ?", s).Preload("Category").Find(&products).Error
+	return products, err
+}
+
+func (p *ProductRepository) GetProductOnStore(id int) ([]entity.ProductResponse, error) {
+	var products []entity.ProductResponse
+	err := p.DB.Where("store_id = ?", id).Preload("Category").Find(&products).Error
 	return products, err
 }
 

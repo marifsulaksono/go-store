@@ -19,13 +19,13 @@ type Store struct {
 }
 
 type StoreResponseById struct {
-	Id           int       `json:"id"`
-	NameStore    string    `json:"name_store"`
-	Address      string    `json:"address"`
-	Description  string    `json:"desc"`
-	TotalProduct int       `json:"total_product"`
-	Product      []Product `json:"product"`
-	CreateAt     time.Time `json:"create_at"`
+	Id           int               `json:"id"`
+	NameStore    string            `json:"name_store"`
+	Address      string            `json:"address"`
+	Description  string            `json:"desc"`
+	TotalProduct int               `json:"total_product"`
+	Product      []ProductResponse `json:"product" gorm:"foreignKey:StoreId;references:Id"`
+	CreateAt     time.Time         `json:"create_at"`
 }
 
 type ProductStoreResponse struct {
@@ -35,5 +35,9 @@ type ProductStoreResponse struct {
 }
 
 func (ProductStoreResponse) TableName() string {
+	return "stores"
+}
+
+func (StoreResponseById) TableName() string {
 	return "stores"
 }

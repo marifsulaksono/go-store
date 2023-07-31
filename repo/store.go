@@ -23,7 +23,13 @@ func (s *StoreRepository) GetAllStore() ([]entity.Store, error) {
 	return result, err
 }
 
-func (s *StoreRepository) GetStoreById(id int) (entity.Store, error) {
+func (s *StoreRepository) GetStoreById(id int) (entity.StoreResponseById, error) {
+	var result entity.StoreResponseById
+	err := s.DB.Where("id = ?", id).Preload("Product.Category").First(&result).Error
+	return result, err
+}
+
+func (s *StoreRepository) CheckStoreById(id int) (entity.Store, error) {
 	var result entity.Store
 	err := s.DB.Where("id = ?", id).First(&result).Error
 	return result, err

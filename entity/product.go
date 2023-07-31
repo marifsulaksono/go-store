@@ -26,6 +26,20 @@ type ProductTransactionResponse struct {
 	Store   ProductStoreResponse `json:"store"`
 }
 
+type ProductResponse struct {
+	Name       string   `json:"name"`
+	Stock      int      `json:"stock"`
+	Price      int      `json:"price"`
+	Sold       int      `json:"sold"`
+	StoreId    int      `json:"-"`
+	CategoryId int      `json:"-"`
+	Category   Category `json:"category"`
+}
+
 func (ProductTransactionResponse) TableName() string {
+	return "products"
+}
+
+func (ProductResponse) TableName() string {
 	return "products"
 }

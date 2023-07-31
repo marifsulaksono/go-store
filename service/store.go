@@ -11,12 +11,14 @@ import (
 )
 
 type StoreService struct {
-	Repo repo.StoreRepository
+	Repo        repo.StoreRepository
+	ProductRepo repo.ProductRepository
 }
 
-func NewStoreService(r repo.StoreRepository) *StoreService {
+func NewStoreService(r repo.StoreRepository, p repo.ProductRepository) *StoreService {
 	return &StoreService{
-		Repo: r,
+		Repo:        r,
+		ProductRepo: p,
 	}
 }
 
@@ -25,8 +27,14 @@ func (s *StoreService) GetAllStore() ([]entity.Store, error) {
 	return result, err
 }
 
-func (s *StoreService) GetStoreById(id int) (entity.Store, error) {
+func (s *StoreService) GetStoreById(id int) (entity.StoreResponseById, error) {
+	product, err := s.ProductRepo.GetProductOnStore(id)
+	if err != nil {
+		return entity.StoreResponseById{}, err
+	}
 	result, err := s.Repo.GetStoreById(id)
+	result.TotalProduct = len(product)
+	result.Product = append(result.Product, product...)
 	return result, err
 }
 
@@ -46,7 +54,7 @@ func (s *StoreService) CreateStore(userId int, store *entity.Store) (entity.Stor
 }
 
 func (s *StoreService) UpdateStore(userId, id int, store *entity.Store) error {
-	checkStore, err := s.Repo.GetStoreById(id)
+	checkStore, err := s.Repo.CheckStoreById(id)
 	if checkStore.UserId != userId {
 		return helper.ErrInvalidUser
 	} else if err != nil {
@@ -58,7 +66,7 @@ func (s *StoreService) UpdateStore(userId, id int, store *entity.Store) error {
 }
 
 func (s *StoreService) SoftDeleteStore(userId, id int) error {
-	checkStore, err := s.Repo.GetStoreById(id)
+	checkStore, err := s.Repo.CheckStoreById(id)
 	if checkStore.UserId != userId {
 		return helper.ErrInvalidUser
 	} else if err != nil {
