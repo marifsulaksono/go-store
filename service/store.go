@@ -2,10 +2,12 @@ package service
 
 import (
 	_ "errors"
+	"fmt"
 	"gostore/entity"
 	"gostore/helper"
 	"gostore/repo"
 	"strings"
+	"time"
 )
 
 type StoreService struct {
@@ -28,12 +30,19 @@ func (s *StoreService) GetStoreById(id int) (entity.Store, error) {
 	return result, err
 }
 
-func (s *StoreService) CreateStore(store *entity.Store) error {
+func (s *StoreService) CreateStore(userId int, store *entity.Store) (entity.Store, error) {
+	store.Status = "active"
+	store.UserId = userId
+	store.CreateAt = time.Now()
 	err := s.Repo.CreateStore(store)
-	if strings.Contains(err.Error(), "Error 1062") {
-		return helper.ErrDuplicateStore
+	if err != nil {
+		if strings.Contains(err.Error(), "Error 1062") {
+			fmt.Println("error service disini", err)
+			return entity.Store{}, helper.ErrDuplicateStore
+		}
+		return entity.Store{}, err
 	}
-	return err
+	return *store, nil
 }
 
 func (s *StoreService) UpdateStore(userId, id int, store *entity.Store) error {

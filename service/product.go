@@ -31,7 +31,7 @@ func (p *ProductService) GetProductbyStatus(s string) ([]entity.Product, error) 
 	return products, err
 }
 
-func (p *ProductService) SearchProduct(keyword, order, sortBy string, minPrice, maxPrice float64, limit, page int) ([]entity.Product, error) {
+func (p *ProductService) SearchProduct(keyword, order, sortBy string, minPrice, maxPrice, categoryId, storeId, limit, page int) ([]entity.Product, error) {
 	if order != "DESC" {
 		order = "ASC"
 	}
@@ -40,9 +40,15 @@ func (p *ProductService) SearchProduct(keyword, order, sortBy string, minPrice, 
 		sortBy = "name"
 	}
 
+	if limit <= 0 {
+		limit = 10
+	} else if page <= 0 {
+		page = 1
+	}
+
 	offset := (page - 1) * limit
 
-	products, err := p.Repo.SearchProduct(keyword, order, sortBy, minPrice, maxPrice, limit, offset)
+	products, err := p.Repo.SearchProduct(keyword, order, sortBy, minPrice, maxPrice, categoryId, storeId, limit, offset)
 	return products, err
 
 	// DB.Where("name LIKE ? AND price BETWEEN ? AND ?", "%"+keyword+"%", minPrice, maxPrice).Order(sortBy +

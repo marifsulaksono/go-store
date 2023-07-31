@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"fmt"
 	"gostore/entity"
 
 	"gorm.io/gorm"
@@ -35,7 +36,8 @@ func (s *StoreRepository) GetDeletedStore(id int) (entity.Store, error) {
 }
 
 func (s *StoreRepository) CreateStore(store *entity.Store) error {
-	err := s.DB.Create(store).Error
+	err := s.DB.Create(&store).Error
+	fmt.Println("error repo disini", err)
 	return err
 }
 

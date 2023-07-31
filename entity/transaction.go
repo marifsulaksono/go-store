@@ -41,7 +41,7 @@ type AllTransactionItemResponse struct {
 	Id            int                        `json:"id"`
 	TransactionId int                        `json:"-"`
 	ProductId     int                        `json:"product_id"`
-	Product       ProductTransactionResponse `gorm:"foreignKey:ProductId" json:"items"`
+	Product       ProductTransactionResponse `gorm:"foreignKey:ProductId" json:"product"`
 	Subtotal      int                        `json:"subtotal"`
 }
 

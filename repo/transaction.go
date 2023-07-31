@@ -18,13 +18,13 @@ func NewTransactionRepository(db *gorm.DB) *TransactionRepository {
 
 func (tr *TransactionRepository) GetTransactions() ([]entity.AllTransactionResponse, error) {
 	var result []entity.AllTransactionResponse
-	err := tr.DB.Preload("Items").Find(&result).Error
+	err := tr.DB.Preload("Items.Product").Find(&result).Error
 	return result, err
 }
 
 func (tr *TransactionRepository) GetTransactionById(id int) (entity.Transaction, error) {
 	var result entity.Transaction
-	err := tr.DB.Where("id = ?", id).Preload("Items.Product").Preload("Items.Product.Category").Preload("ShippingAddress").First(&result).Error
+	err := tr.DB.Where("id = ?", id).Preload("Items.Product.Store").Preload("ShippingAddress").First(&result).Error
 	return result, err
 }
 

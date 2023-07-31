@@ -8,7 +8,6 @@ import (
 	"gostore/middleware"
 	"gostore/service"
 	"net/http"
-	"time"
 )
 
 type StoreController struct {
@@ -53,16 +52,14 @@ func (s *StoreController) CreateStore(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	store.Status = "active"
-	store.UserId = userId
-	store.CreateAt = time.Now()
-	if err := s.Service.CreateStore(&store); err != nil {
+	result, err := s.Service.CreateStore(userId, &store)
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	message := fmt.Sprintf("Success create new store on user %d", userId)
-	helper.ResponseWrite(w, store, message)
+	helper.ResponseWrite(w, result, message)
 }
 
 func (s *StoreController) UpdateStore(w http.ResponseWriter, r *http.Request) {

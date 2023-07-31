@@ -6,7 +6,6 @@ import (
 	"gostore/entity"
 	"gostore/helper"
 	"gostore/service"
-	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -46,33 +45,21 @@ func (p *ProductController) GetProductbyId(w http.ResponseWriter, r *http.Reques
 }
 
 func (p *ProductController) SearchProduct(w http.ResponseWriter, r *http.Request) {
-	keyword := ""
-	keyword = r.URL.Query().Get("keyword")
+	// keyword := ""
+	keyword := r.URL.Query().Get("keyword")
 	sortBy := r.URL.Query().Get("sortBy")
 	order := strings.ToUpper(r.URL.Query().Get("order"))
-	minPrice, err := strconv.ParseFloat(r.URL.Query().Get("minPrice"), 64)
-	if err != nil || minPrice < 0 {
-		minPrice = 0
-		fmt.Println(err)
-	}
-	maxPrice, err := strconv.ParseFloat(r.URL.Query().Get("maxPrice"), 64)
-	if err != nil {
-		maxPrice = math.MaxFloat64
-	} else if maxPrice < minPrice {
-		http.Error(w, "max price must be higher than min price", http.StatusBadRequest)
-		return
-	}
-	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
-	if err != nil || limit <= 0 {
-		limit = 10
-	}
-	page, err := strconv.Atoi(r.URL.Query().Get("page"))
-	if err != nil || page <= 0 {
-		page = 1
-	}
+	minPrice, _ := strconv.Atoi(r.URL.Query().Get("minPrice"))
+	fmt.Printf("maxPrice: %v\n", minPrice)
+	maxPrice, _ := strconv.Atoi(r.URL.Query().Get("maxPrice"))
+	fmt.Printf("maxPrice: %v\n", maxPrice)
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	categoryId, _ := strconv.Atoi(r.URL.Query().Get("categoryId"))
+	storeId, _ := strconv.Atoi(r.URL.Query().Get("storeId"))
 	fmt.Printf("%v, %v, %v, %v, %v, %v, %v | ", keyword, sortBy, order, minPrice, maxPrice, limit, page)
 
-	products, err := p.Service.SearchProduct(keyword, order, sortBy, minPrice, maxPrice, limit, page)
+	products, err := p.Service.SearchProduct(keyword, order, sortBy, minPrice, maxPrice, categoryId, storeId, limit, page)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

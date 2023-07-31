@@ -1,7 +1,6 @@
 package repo
 
 import (
-	"fmt"
 	"gostore/entity"
 
 	"gorm.io/gorm"
@@ -19,13 +18,13 @@ func NewProductRepository(db *gorm.DB) *ProductRepository {
 
 func (p *ProductRepository) GetAllProducts() ([]entity.Product, error) {
 	var products []entity.Product
-	err := p.DB.Preload("Category").Find(&products).Error
+	err := p.DB.Preload("Category").Preload("Store").Find(&products).Error
 	return products, err
 }
 
 func (p *ProductRepository) GetProductById(id int) (entity.Product, error) {
 	var product entity.Product
-	err := p.DB.Where("id = ?", id).Preload("Category", "id NOT IN (?)", "cancelled").First(&product).Error
+	err := p.DB.Where("id = ?", id).Preload("Category").Preload("Store").First(&product).Error
 	return product, err
 }
 
@@ -41,15 +40,41 @@ func (p *ProductRepository) GetProductByStatus(s string) ([]entity.Product, erro
 	return products, err
 }
 
-func (p *ProductRepository) SearchProduct(keyword, order, sortBy string, minPrice, maxPrice float64, limit, offset int) ([]entity.Product, error) {
-	var products []entity.Product
-	err := p.DB.Where("name LIKE ? AND price BETWEEN ? AND ?", "%"+keyword+"%", minPrice, maxPrice).Order(sortBy +
-		" " + order).Limit(limit).Offset(offset).Preload("Category").Find(&products).Error
+func (p *ProductRepository) SearchProduct(keyword, order, sortBy string, minPrice, maxPrice, categoryId, storeId, limit, offset int) ([]entity.Product, error) {
+	var (
+		products []entity.Product
+		db       = p.DB
+	)
+
+	if keyword != "" {
+		db = db.Where("name LIKE ?", "%"+keyword+"%")
+	}
+
+	if categoryId > 0 {
+		db = db.Where("category_id = ?", categoryId)
+	}
+
+	if storeId > 0 {
+		db = db.Where("store_id = ?", storeId)
+	}
+
+	if minPrice > 0 {
+		db = db.Where("price >= ?", minPrice)
+	}
+
+	if maxPrice > 0 {
+		db = db.Where("price <= ?", maxPrice)
+	}
+
+	err := db.Order(sortBy +
+		" " + order).Limit(limit).Offset(offset).Preload("Category").Preload("Store").Find(&products).Error
+
+	// err := p.DB.Where("name LIKE ? AND price BETWEEN ? AND ?", "%"+keyword+"%", minPrice, maxPrice).Order(sortBy +
+	// 	" " + order).Limit(limit).Offset(offset).Preload("Category").Find(&products).Error
 	return products, err
 }
 
 func (p *ProductRepository) InsertProduct(product *entity.Product) error {
-	fmt.Println(product)
 	err := p.DB.Create(&product).Error
 	return err
 }
