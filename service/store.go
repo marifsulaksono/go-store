@@ -28,13 +28,8 @@ func (s *StoreService) GetAllStore() ([]entity.Store, error) {
 }
 
 func (s *StoreService) GetStoreById(id int) (entity.StoreResponseById, error) {
-	product, err := s.ProductRepo.GetProductOnStore(id)
-	if err != nil {
-		return entity.StoreResponseById{}, err
-	}
 	result, err := s.Repo.GetStoreById(id)
-	result.TotalProduct = len(product)
-	result.Product = append(result.Product, product...)
+	result.TotalProduct = len(result.Product)
 	return result, err
 }
 
