@@ -18,7 +18,7 @@ func NewTransactionRepository(db *gorm.DB) *TransactionRepository {
 
 func (tr *TransactionRepository) GetTransactions() ([]entity.AllTransactionResponse, error) {
 	var result []entity.AllTransactionResponse
-	err := tr.DB.Preload("Items.Product").Find(&result).Error
+	err := tr.DB.Preload("Items.Product.Store").Find(&result).Error
 	return result, err
 }
 
@@ -28,8 +28,8 @@ func (tr *TransactionRepository) GetTransactionById(id int) (entity.Transaction,
 	return result, err
 }
 
-func (tr *TransactionRepository) CreateTransaction(transaction *entity.Transaction) error {
-	err := tr.DB.Create(transaction).Error
+func (tr *TransactionRepository) CreateTransaction(tx *gorm.DB, transaction *entity.Transaction) error {
+	err := tx.Create(transaction).Error
 	return err
 }
 

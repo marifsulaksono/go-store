@@ -36,6 +36,10 @@ func (tr *TransactionService) GetTransactionById(id int) (entity.Transaction, er
 func (tr *TransactionService) CreateTransaction(userId int, items *entity.Transaction) (entity.Transaction, error) {
 	var transaction entity.Transaction
 	var total int
+
+	// Using database transaction for ACID (atomicity, Consistency, Isolation, Durability)
+	tx := tr.Repo.DB.Begin()
+
 	// check valid shipping address with the user login
 	checkSA, err := tr.UserRepo.GetShippingAddressById(items.ShippingAddressId)
 	if checkSA.UserId != userId {
@@ -52,6 +56,7 @@ func (tr *TransactionService) CreateTransaction(userId int, items *entity.Transa
 		} else if product.Stock < trItem.Qty {
 			return entity.Transaction{}, helper.ErrStockNotEnough
 		}
+		fmt.Println("stock awal :", product.Stock)
 		product.Stock -= trItem.Qty
 		product.Sold += trItem.Qty
 		trItem.Subtotal = product.Price * trItem.Qty
@@ -59,13 +64,16 @@ func (tr *TransactionService) CreateTransaction(userId int, items *entity.Transa
 		items.Items[i].Price = product.Price
 		items.Items[i].Subtotal = trItem.Subtotal
 		fmt.Println(product)
-		if err := tr.ProductRepo.UpdateStockandSold(trItem.ProductId, &product); err != nil {
+		if err := tr.ProductRepo.UpdateStockandSoldWithTx(tx, trItem.ProductId, &product); err != nil {
+			tx.Rollback()
 			return entity.Transaction{}, err
 		}
 
+		fmt.Println("stock akhir :", product.Stock)
 		if product.Stock == 0 {
-			err := tr.ProductRepo.ChangeStatusProduct(trItem.ProductId, "soldout")
+			err := tr.ProductRepo.ChangeStatusProductWithTx(tx, trItem.ProductId, "soldout")
 			if err != nil {
+				tx.Rollback()
 				return entity.Transaction{}, err
 			}
 		}
@@ -79,8 +87,15 @@ func (tr *TransactionService) CreateTransaction(userId int, items *entity.Transa
 	transaction.UserId = userId
 	transaction.Items = items.Items
 
-	err = tr.Repo.CreateTransaction(&transaction)
-	return transaction, err
+	fmt.Println(transaction.Items)
+	err = tr.Repo.CreateTransaction(tx, &transaction)
+	if err != nil {
+		tx.Rollback()
+		return entity.Transaction{}, err
+	}
+
+	tx.Commit()
+	return transaction, nil
 }
 
 // func (tr *TransactionService) UpdateTransaction(id int, transaction *entity.Transaction, userId int) error {
@@ -96,7 +111,7 @@ func (tr *TransactionService) CreateTransaction(userId int, items *entity.Transa
 // 	return err
 // }
 
-func (tr *TransactionService) SoftDeleteTransaction(id int, user int) error {
+func (tr *TransactionService) SoftDeleteTransaction(id, user int) error {
 	trx, err := tr.Repo.GetTransactionById(id)
 	if err != nil {
 		return helper.ErrRecDeleted

@@ -13,7 +13,7 @@ type Transaction struct {
 	Status            string            `json:"status"`
 	ShippingAddressId int               `json:"shipping_address_id"`
 	ShippingAddress   ShippingAddress   `json:"shipping_address"`
-	UserId            int               `json:"user_id"`
+	UserId            int               `json:"-"`
 	Items             []TransactionItem `json:"items" gorm:"foreignKey:TransactionId;references:Id"`
 	DeleteAt          gorm.DeletedAt    `json:"-"`
 }
@@ -54,6 +54,7 @@ func (AllTransactionItemResponse) TableName() string {
 }
 
 // {
+//     "shipping_address_id": 1,
 //     "transaction_items": [
 //         {
 //             "item_id": 1,

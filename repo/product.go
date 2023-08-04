@@ -40,12 +40,6 @@ func (p *ProductRepository) GetProductByStatus(s string) ([]entity.Product, erro
 	return products, err
 }
 
-func (p *ProductRepository) GetProductOnStore(id int) ([]entity.ProductResponse, error) {
-	var products []entity.ProductResponse
-	err := p.DB.Where("store_id = ?", id).Preload("Category").Find(&products).Error
-	return products, err
-}
-
 func (p *ProductRepository) SearchProduct(keyword, order, sortBy string, minPrice, maxPrice, categoryId, storeId, limit, offset int) ([]entity.Product, error) {
 	var (
 		products []entity.Product
@@ -91,13 +85,23 @@ func (p *ProductRepository) UpdateProduct(id int, model, product *entity.Product
 }
 
 func (p *ProductRepository) UpdateStockandSold(id int, product *entity.Product) error {
-	err := p.DB.Save(&product).Error
-	// err := p.DB.Model(&entity.Product{}).Select("Stock", "Sold").Where("id = ?", id).Updates(product).Error
+	err := p.DB.Where("id = ?", id).Save(&product).Error
+	return err
+}
+
+func (p *ProductRepository) UpdateStockandSoldWithTx(tx *gorm.DB, id int, product *entity.Product) error {
+	// err := tx.Where("id = ?", id).Save(&product).Error
+	err := tx.Model(&entity.Product{}).Select("stock", "sold").Where("id = ?", id).Updates(product).Error
 	return err
 }
 
 func (p *ProductRepository) ChangeStatusProduct(id int, s string) error {
 	err := p.DB.Model(&entity.Product{}).Where("id = ?", id).Update("status", s).Error
+	return err
+}
+
+func (p *ProductRepository) ChangeStatusProductWithTx(tx *gorm.DB, id int, s string) error {
+	err := tx.Model(&entity.Product{}).Where("id = ?", id).Update("status", s).Error
 	return err
 }
 
