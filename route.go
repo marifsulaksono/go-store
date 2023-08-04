@@ -17,18 +17,21 @@ func routeInit(conn *gorm.DB) *mux.Router {
 	categoryRepo := repo.NewCategoryRepository(conn)
 	storeRepo := repo.NewStoreRepository(conn)
 	productRepo := repo.NewProductRepository(conn)
+	cartRepo := repo.NewCartRepository(conn)
 	trRepo := repo.NewTransactionRepository(conn)
 
 	userService := service.NewUserService(*userRepo)
 	categoryService := service.NewCategoryService(*categoryRepo)
-	storeService := service.NewStoreService(*storeRepo)
+	storeService := service.NewStoreService(*storeRepo, *productRepo)
 	productService := service.NewProductService(*productRepo)
+	cartService := service.NewCartService(*cartRepo, *productRepo)
 	trService := service.NewTransactionService(*trRepo, *productRepo, *userRepo)
 
 	userController := controller.NewUserController(*userService)
 	categoryController := controller.NewCategoryController(*categoryService)
 	storeContoller := controller.NewStoreController(*storeService)
 	productController := controller.NewProductContoller(*productService)
+	cartController := controller.NewCartController(*cartService)
 	trController := controller.NewTransactionController(*trService)
 
 	// ============== Initialize Route ============
@@ -68,13 +71,19 @@ func routeInit(conn *gorm.DB) *mux.Router {
 	// ==================== Router Category ====================
 	r.HandleFunc("/categories", middleware.JWTMiddleware(categoryController.GetAllCategories)).Methods(http.MethodGet)
 
+	// ==================== Router Cart ====================
+	r.HandleFunc("/cart", middleware.JWTMiddleware(cartController.GetCartByUserId)).Methods(http.MethodGet)
+	r.HandleFunc("/cart", middleware.JWTMiddleware(cartController.CreateCart)).Methods(http.MethodPost)
+	r.HandleFunc("/cart/{id}", middleware.JWTMiddleware(cartController.UpdateCart)).Methods(http.MethodPut)
+	r.HandleFunc("/cart/{id}", middleware.JWTMiddleware(cartController.DeleteCart)).Methods(http.MethodDelete)
+
 	// ==================== Router Transaction ====================
 	r.HandleFunc("/transactions", middleware.JWTMiddleware(trController.GetTransactions)).Methods(http.MethodGet)
 	r.HandleFunc("/transaction/{id}", middleware.JWTMiddleware(trController.GetTransactionById)).Methods(http.MethodGet)
 	r.HandleFunc("/transaction", middleware.JWTMiddleware(trController.CreateTransaction)).Methods(http.MethodPost)
-	r.HandleFunc("/transaction/delete/{id}", middleware.JWTMiddleware(trController.SoftDeleteTransaction)).Methods(http.MethodDelete)
+	r.HandleFunc("/transaction/delete/{id}", middleware.JWTMiddleware(trController.DeleteTransaction)).Methods(http.MethodDelete)
 	r.HandleFunc("/transaction/{id}/restore", middleware.JWTMiddleware(trController.RestoreDeletedTransaction)).Methods(http.MethodPut)
-	r.HandleFunc("/transaction/{id}/delete", middleware.JWTMiddleware(trController.DeleteTransaction)).Methods(http.MethodDelete)
+	r.HandleFunc("/transaction/{id}/delete", middleware.JWTMiddleware(trController.SoftDeleteTransaction)).Methods(http.MethodDelete)
 
 	return r
 }
