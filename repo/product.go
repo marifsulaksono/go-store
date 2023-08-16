@@ -1,50 +1,53 @@
 package repo
 
 import (
+	"context"
 	"gostore/entity"
 
 	"gorm.io/gorm"
 )
 
-type ProductRepository struct {
+type productRepository struct {
 	DB *gorm.DB
 }
 
-func NewProductRepository(db *gorm.DB) *ProductRepository {
-	return &ProductRepository{
+type ProductRepository interface {
+	GetAllProducts(ctx context.Context, keyword, status, order, sortBy string, minPrice, maxPrice, categoryId, storeId, limit, offset int) ([]entity.Product, error)
+	GetProductById(ctx context.Context, id int) (entity.Product, error)
+	GetDeletedProduct(ctx context.Context, id int) (entity.Product, error)
+	InsertProduct(ctx context.Context, product *entity.Product) error
+	UpdateProduct(ctx context.Context, id int, product *entity.Product) error
+	ChangeStatusProduct(ctx context.Context, id int, s string) error
+	SoftDeleteProduct(ctx context.Context, id int) error
+	RestoreDeletedProduct(ctx context.Context, id int) error
+	DeleteProduct(ctx context.Context, id int) error
+	// GetAllProducts(ctx context.Context) ([]entity.Product, error)
+	// GetProductByStatus(ctx context.Context, s string) ([]entity.Product, error)
+	// UpdateStockandSold(ctx context.Context, id int, product *entity.Product) error
+}
+
+func NewProductRepository(db *gorm.DB) ProductRepository {
+	return &productRepository{
 		DB: db,
 	}
 }
 
-func (p *ProductRepository) GetAllProducts() ([]entity.Product, error) {
-	var products []entity.Product
-	err := p.DB.Preload("Category").Preload("Store").Find(&products).Error
-	return products, err
-}
+// func (p *productRepository) GetAllProducts(ctx context.Context) ([]entity.Product, error) {
+// 	var products []entity.Product
+// 	err := p.DB.Preload("Category").Preload("Store").Find(&products).Error
+// 	return products, err
+// }
 
-func (p *ProductRepository) GetProductById(id int) (entity.Product, error) {
-	var product entity.Product
-	err := p.DB.Where("id = ?", id).Preload("Category").Preload("Store").First(&product).Error
-	return product, err
-}
-
-func (p *ProductRepository) GetDeletedProduct(id int) (entity.Product, error) {
-	var product entity.Product
-	err := p.DB.Unscoped().Where("id = ?", id).Preload("Category", "id NOT IN (?)", "cancelled").First(&product).Error
-	return product, err
-}
-
-func (p *ProductRepository) GetProductByStatus(s string) ([]entity.Product, error) {
-	var products []entity.Product
-	err := p.DB.Where("status = ?", s).Preload("Category").Find(&products).Error
-	return products, err
-}
-
-func (p *ProductRepository) SearchProduct(keyword, order, sortBy string, minPrice, maxPrice, categoryId, storeId, limit, offset int) ([]entity.Product, error) {
+func (p *productRepository) GetAllProducts(ctx context.Context, keyword, status, order, sortBy string,
+	minPrice, maxPrice, categoryId, storeId, limit, offset int) ([]entity.Product, error) {
 	var (
 		products []entity.Product
 		db       = p.DB
 	)
+
+	if status != "" {
+		db = db.Where("status = ?", status)
+	}
 
 	if keyword != "" {
 		db = db.Where("name LIKE ?", "%"+keyword+"%")
@@ -74,48 +77,58 @@ func (p *ProductRepository) SearchProduct(keyword, order, sortBy string, minPric
 	return products, err
 }
 
-func (p *ProductRepository) InsertProduct(product *entity.Product) error {
-	err := p.DB.Create(&product).Error
-	return err
+func (p *productRepository) GetProductById(ctx context.Context, id int) (entity.Product, error) {
+	var product entity.Product
+	err := p.DB.Where("id = ?", id).Preload("Category").Preload("Store").First(&product).Error
+	return product, err
 }
 
-func (p *ProductRepository) UpdateProduct(id int, model, product *entity.Product) error {
-	err := p.DB.Model(model).Where("id = ?", id).Updates(product).Error
-	return err
+func (p *productRepository) GetDeletedProduct(ctx context.Context, id int) (entity.Product, error) {
+	var product entity.Product
+	err := p.DB.Unscoped().Where("id = ?", id).First(&product).Error
+	return product, err
 }
 
-func (p *ProductRepository) UpdateStockandSold(id int, product *entity.Product) error {
-	err := p.DB.Where("id = ?", id).Save(&product).Error
-	return err
+func (p *productRepository) GetProductByStatus(ctx context.Context, s string) ([]entity.Product, error) {
+	var products []entity.Product
+	err := p.DB.Where("status = ?", s).Preload("Category").Find(&products).Error
+	return products, err
 }
 
-func (p *ProductRepository) UpdateStockandSoldWithTx(tx *gorm.DB, id int, product *entity.Product) error {
-	// err := tx.Where("id = ?", id).Save(&product).Error
-	err := tx.Model(&entity.Product{}).Select("stock", "sold").Where("id = ?", id).Updates(product).Error
-	return err
+func (p *productRepository) InsertProduct(ctx context.Context, product *entity.Product) error {
+	return p.DB.Create(&product).Error
 }
 
-func (p *ProductRepository) ChangeStatusProduct(id int, s string) error {
-	err := p.DB.Model(&entity.Product{}).Where("id = ?", id).Update("status", s).Error
-	return err
+func (p *productRepository) UpdateProduct(ctx context.Context, id int, product *entity.Product) error {
+	updateProducts := map[string]interface{}{
+		"Name":       product.Name,
+		"Stock":      product.Stock,
+		"Price":      product.Price,
+		"Desc":       product.Desc,
+		"Status":     product.Status,
+		"CategoryId": product.CategoryId,
+	}
+	return p.DB.Model(&entity.Product{}).Where("id = ?", id).Updates(updateProducts).Error
 }
 
-func (p *ProductRepository) ChangeStatusProductWithTx(tx *gorm.DB, id int, s string) error {
-	err := tx.Model(&entity.Product{}).Where("id = ?", id).Update("status", s).Error
-	return err
+// func (p *productRepository) UpdateStockandSold(ctx context.Context, id int, product *entity.Product) error {
+// 	// err := tx.Model(&entity.Product{}).Select("stock", "sold").Where("id = ?", id).Updates(product).Error
+// 	err := p.DB.Where("id = ?", id).Save(&product).Error
+// 	return err
+// }
+
+func (p *productRepository) ChangeStatusProduct(ctx context.Context, id int, s string) error {
+	return p.DB.Model(&entity.Product{}).Where("id = ?", id).Update("status", s).Error
 }
 
-func (p *ProductRepository) SoftDeleteProduct(id int) error {
-	err := p.DB.Where("id = ?", id).Delete(&entity.Product{}).Error
-	return err
+func (p *productRepository) SoftDeleteProduct(ctx context.Context, id int) error {
+	return p.DB.Where("id = ?", id).Delete(&entity.Product{}).Error
 }
 
-func (p *ProductRepository) RestoreDeletedProduct(id int) error {
-	err := p.DB.Unscoped().Model(&entity.Product{}).Where("id = ?", id).Update("delete_at", gorm.DeletedAt{}).Error
-	return err
+func (p *productRepository) RestoreDeletedProduct(ctx context.Context, id int) error {
+	return p.DB.Unscoped().Model(&entity.Product{}).Where("id = ?", id).Update("delete_at", gorm.DeletedAt{}).Error
 }
 
-func (p *ProductRepository) DeleteProduct(id int) error {
-	err := p.DB.Unscoped().Where("id = ?", id).Delete(&entity.Product{}).Error
-	return err
+func (p *productRepository) DeleteProduct(ctx context.Context, id int) error {
+	return p.DB.Unscoped().Where("id = ?", id).Delete(&entity.Product{}).Error
 }

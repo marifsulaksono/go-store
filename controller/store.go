@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"gostore/entity"
 	"gostore/helper"
-	"gostore/middleware"
 	"gostore/service"
 	"net/http"
 )
@@ -21,7 +20,8 @@ func NewStoreController(s service.StoreService) *StoreController {
 }
 
 func (s *StoreController) GetAllStore(w http.ResponseWriter, r *http.Request) {
-	result, err := s.Service.GetAllStore()
+	ctx := r.Context()
+	result, err := s.Service.GetAllStore(ctx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -31,8 +31,9 @@ func (s *StoreController) GetAllStore(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *StoreController) GetStoreById(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	if id, t := helper.IdVarsMux(w, r); t {
-		result, err := s.Service.GetStoreById(id)
+		result, err := s.Service.GetStoreById(ctx, id)
 		if err != nil {
 			helper.RecordNotFound(w, err)
 			return
@@ -44,7 +45,7 @@ func (s *StoreController) GetStoreById(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *StoreController) CreateStore(w http.ResponseWriter, r *http.Request) {
-	userId := r.Context().Value(middleware.GOSTORE_USERID).(int)
+	ctx := r.Context()
 	var store entity.Store
 	if err := json.NewDecoder(r.Body).Decode(&store); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -52,18 +53,17 @@ func (s *StoreController) CreateStore(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	result, err := s.Service.CreateStore(userId, &store)
+	result, err := s.Service.CreateStore(ctx, &store)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	message := fmt.Sprintf("Success create new store on user %d", userId)
-	helper.ResponseWrite(w, result, message)
+	helper.ResponseWrite(w, result, "Success create new store")
 }
 
 func (s *StoreController) UpdateStore(w http.ResponseWriter, r *http.Request) {
-	userId := r.Context().Value(middleware.GOSTORE_USERID).(int)
+	ctx := r.Context()
 	if id, t := helper.IdVarsMux(w, r); t {
 		var store entity.Store
 		if err := json.NewDecoder(r.Body).Decode(&store); err != nil {
@@ -71,7 +71,7 @@ func (s *StoreController) UpdateStore(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		err := s.Service.UpdateStore(userId, id, &store)
+		err := s.Service.UpdateStore(ctx, id, &store)
 		if err != nil {
 			helper.RecordNotFound(w, err)
 			return
@@ -83,22 +83,23 @@ func (s *StoreController) UpdateStore(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *StoreController) SoftDeleteStore(w http.ResponseWriter, r *http.Request) {
-	userId := r.Context().Value(middleware.GOSTORE_USERID).(int)
+	ctx := r.Context()
 	if id, t := helper.IdVarsMux(w, r); t {
-		err := s.Service.SoftDeleteStore(userId, id)
+		err := s.Service.SoftDeleteStore(ctx, id)
 		if err != nil {
 			helper.RecordNotFound(w, err)
 			return
 		}
 
-		message := fmt.Sprintf("Success delete store %d on user %d", id, userId)
+		message := fmt.Sprintf("Success delete store %d", id)
 		helper.ResponseWrite(w, id, message)
 	}
 }
 
 func (s *StoreController) RestoreDeletedStore(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	if id, t := helper.IdVarsMux(w, r); t {
-		err := s.Service.RestoreDeletedStore(id)
+		err := s.Service.RestoreDeletedStore(ctx, id)
 		if err != nil {
 			helper.RecordNotFound(w, err)
 			return
@@ -110,8 +111,9 @@ func (s *StoreController) RestoreDeletedStore(w http.ResponseWriter, r *http.Req
 }
 
 func (s *StoreController) DeleteStore(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	if id, t := helper.IdVarsMux(w, r); t {
-		err := s.Service.DeleteStore(id)
+		err := s.Service.DeleteStore(ctx, id)
 		if err != nil {
 			helper.RecordNotFound(w, err)
 			return

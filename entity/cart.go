@@ -7,3 +7,19 @@ type Cart struct {
 	Product   ProductTransactionResponse `json:"product"`
 	Qty       int                        `json:"qty"`
 }
+
+/*
+
+Body Request:
+"POST":
+{
+	"product_id": 1,
+	"qty": 10
+}
+
+"PATCH":
+{
+	"qty": 20
+}
+
+*/

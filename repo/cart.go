@@ -1,44 +1,62 @@
 package repo
 
 import (
+	"context"
 	"gostore/entity"
+	"gostore/middleware"
 
 	"gorm.io/gorm"
 )
 
-type CartRepository struct {
+type cartRepository struct {
 	DB *gorm.DB
 }
 
-func NewCartRepository(db *gorm.DB) *CartRepository {
-	return &CartRepository{
+type CartRepository interface {
+	GetCart(ctx context.Context) ([]entity.Cart, error)
+	GetCartById(ctx context.Context, id int) (entity.Cart, error)
+	GetCartId(ctx context.Context, productId, userId int) (entity.Cart, error)
+	CreateCart(ctx context.Context, cart *entity.Cart) error
+	UpdateCart(ctx context.Context, id int, cart *entity.Cart) error
+	DeleteCart(ctx context.Context, id int) error
+}
+
+func NewCartRepository(db *gorm.DB) CartRepository {
+	return &cartRepository{
 		DB: db,
 	}
 }
 
-func (c *CartRepository) GetCart(userId int) ([]entity.Cart, error) {
+func (c *cartRepository) GetCart(ctx context.Context) ([]entity.Cart, error) {
+	userId := ctx.Value(middleware.GOSTORE_USERID).(int)
 	var result []entity.Cart
 	err := c.DB.Where("user_id = ?", userId).Preload("Product.Store").Find(&result).Error
 	return result, err
 }
 
-func (c *CartRepository) GetCartById(id int) (entity.Cart, error) {
+func (c *cartRepository) GetCartById(ctx context.Context, id int) (entity.Cart, error) {
+	userId := ctx.Value(middleware.GOSTORE_USERID)
 	var result entity.Cart
-	err := c.DB.Where("id = ?", id).Find(&result).Error
+	err := c.DB.Where("id = ? and user_id = ?", id, userId).First(&result).Error
 	return result, err
 }
 
-func (c *CartRepository) CreateCart(cart *entity.Cart) error {
-	err := c.DB.Create(cart).Error
-	return err
+// get cart id by product id and user id
+func (c *cartRepository) GetCartId(ctx context.Context, productId, userId int) (entity.Cart, error) {
+	var result entity.Cart
+	err := c.DB.Where("product_id = ? and user_id = ?", productId, userId).First(&result).Error
+	return result, err
 }
 
-func (c *CartRepository) UpdateCart(id int, model, cart *entity.Cart) error {
-	err := c.DB.Model(model).Where("id = ?", id).Updates(cart).Error
-	return err
+func (c *cartRepository) CreateCart(ctx context.Context, cart *entity.Cart) error {
+	return c.DB.Create(cart).Error
 }
 
-func (c *CartRepository) DeleteCart(id int) error {
-	err := c.DB.Where("id = ?", id).Delete(&entity.Cart{}).Error
-	return err
+func (c *cartRepository) UpdateCart(ctx context.Context, id int, cart *entity.Cart) error {
+	return c.DB.Model(&entity.Cart{}).Where("id = ?", id).Update("qty", cart.Qty).Error
+	// return c.DB.Model(model).Where("id = ?", id).Updates(cart).Error
+}
+
+func (c *cartRepository) DeleteCart(ctx context.Context, id int) error {
+	return c.DB.Where("id = ?", id).Delete(&entity.Cart{}).Error
 }

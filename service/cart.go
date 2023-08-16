@@ -1,70 +1,93 @@
 package service
 
 import (
+	"context"
+	"errors"
 	"gostore/entity"
 	"gostore/helper"
+	"gostore/middleware"
 	"gostore/repo"
+
+	"gorm.io/gorm"
 )
 
-type CartService struct {
+type cartService struct {
 	Repo        repo.CartRepository
 	ProductRepo repo.ProductRepository
 }
 
-func NewCartService(r repo.CartRepository, p repo.ProductRepository) *CartService {
-	return &CartService{
+type CartService interface {
+	GetCart(ctx context.Context) ([]entity.Cart, error)
+	CreateCart(ctx context.Context, cart *entity.Cart) error
+	UpdateCart(ctx context.Context, id int, cart *entity.Cart) error
+	DeleteCart(ctx context.Context, id int) error
+}
+
+func NewCartService(r repo.CartRepository, p repo.ProductRepository) CartService {
+	return &cartService{
 		Repo:        r,
 		ProductRepo: p,
 	}
 }
 
-func (c *CartService) GetCart(userId int) ([]entity.Cart, error) {
-	result, err := c.Repo.GetCart(userId)
-	return result, err
+func (c *cartService) GetCart(ctx context.Context) ([]entity.Cart, error) {
+	return c.Repo.GetCart(ctx)
 }
 
-func (c *CartService) CreateCart(userId int, cart *entity.Cart) error {
-	product, err := c.ProductRepo.GetProductById(cart.ProductId)
+func (c *cartService) CreateCart(ctx context.Context, cart *entity.Cart) error {
+	userId := ctx.Value(middleware.GOSTORE_USERID).(int)
+	product, err := c.ProductRepo.GetProductById(ctx, cart.ProductId)
 	if err != nil {
-		return err
+		return helper.ErrProductNotFound
 	}
 
-	// check stock product
+	// check stock & valid product
 	if product.Stock < cart.Qty {
 		return helper.ErrStockNotEnough
+	} else if product.Store.UserId == userId {
+		return errors.New("cannot add your product's store to your cart")
 	}
 
-	err = c.Repo.CreateCart(cart)
-	return err
+	checkCart, err := c.Repo.GetCartId(ctx, cart.ProductId, userId)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			// create the cart if not productid on userid cart
+			cart.UserId = userId
+			err = c.Repo.CreateCart(ctx, cart)
+			return err
+		}
+		return err
+	}
+
+	// supplement total qty if the product added is same
+	if cart.ProductId == checkCart.ProductId {
+		cart.Qty += checkCart.Qty
+	}
+
+	return c.Repo.UpdateCart(ctx, checkCart.Id, cart)
 }
 
-func (c *CartService) UpdateCart(userId, id int, cart *entity.Cart) error {
-	checkCart, err := c.Repo.GetCartById(id)
+func (c *cartService) UpdateCart(ctx context.Context, id int, cart *entity.Cart) error {
+	checkCart, err := c.Repo.GetCartById(ctx, id)
 	if err != nil {
 		return err
-	} else if checkCart.UserId != userId {
-		return helper.ErrAccDeny
 	}
 
-	checkProduct, err := c.ProductRepo.GetProductById(checkCart.ProductId)
+	checkProduct, err := c.ProductRepo.GetProductById(ctx, checkCart.ProductId)
 	if err != nil {
 		return err
 	} else if checkProduct.Stock < cart.Qty {
 		return helper.ErrStockNotEnough
 	}
 
-	err = c.Repo.UpdateCart(id, &checkCart, cart)
-	return err
+	return c.Repo.UpdateCart(ctx, id, cart)
 }
 
-func (c *CartService) DeleteCart(userId, id int) error {
-	checkCart, err := c.Repo.GetCartById(id)
+func (c *cartService) DeleteCart(ctx context.Context, id int) error {
+	_, err := c.Repo.GetCartById(ctx, id)
 	if err != nil {
 		return err
-	} else if checkCart.UserId != userId {
-		return helper.ErrAccDeny
 	}
 
-	err = c.Repo.DeleteCart(id)
-	return err
+	return c.Repo.DeleteCart(ctx, id)
 }

@@ -17,6 +17,6 @@ func TestMain(m *testing.M) {
 		panic("Connection failed!")
 	}
 
-	testDB = *repo.NewProductRepository(conn)
+	testDB = repo.NewProductRepository(conn)
 	os.Exit(m.Run())
 }

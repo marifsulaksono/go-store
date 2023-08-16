@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"gostore/entity"
 	"gostore/helper"
-	"gostore/middleware"
 	"gostore/service"
 	"net/http"
 )
@@ -21,18 +20,21 @@ func NewCartController(s service.CartService) *CartController {
 }
 
 func (c *CartController) GetCartByUserId(w http.ResponseWriter, r *http.Request) {
-	userId := r.Context().Value(middleware.GOSTORE_USERID).(int)
-	result, err := c.Service.GetCart(userId)
+	ctx := r.Context()
+	result, err := c.Service.GetCart(ctx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	} else if len(result) == 0 {
+		helper.ResponseWrite(w, result, fmt.Sprintln("Data not found"))
+		return
 	}
 
-	helper.ResponseWrite(w, result, fmt.Sprintf("Success get all carts on user %d", userId))
+	helper.ResponseWrite(w, result, "Success get all carts")
 }
 
 func (c *CartController) CreateCart(w http.ResponseWriter, r *http.Request) {
-	userId := r.Context().Value(middleware.GOSTORE_USERID).(int)
+	ctx := r.Context()
 	var cart entity.Cart
 	err := json.NewDecoder(r.Body).Decode(&cart)
 	if err != nil {
@@ -41,18 +43,17 @@ func (c *CartController) CreateCart(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	cart.UserId = userId
-	err = c.Service.CreateCart(userId, &cart)
+	err = c.Service.CreateCart(ctx, &cart)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	helper.ResponseWrite(w, cart, fmt.Sprintf("Success create new cart on user %d", userId))
+	helper.ResponseWrite(w, cart, "Success create new cart")
 }
 
 func (c *CartController) UpdateCart(w http.ResponseWriter, r *http.Request) {
-	userId := r.Context().Value(middleware.GOSTORE_USERID).(int)
+	ctx := r.Context()
 	if id, s := helper.IdVarsMux(w, r); s {
 		var cart entity.Cart
 		err := json.NewDecoder(r.Body).Decode(&cart)
@@ -61,25 +62,25 @@ func (c *CartController) UpdateCart(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		err = c.Service.UpdateCart(userId, id, &cart)
+		err = c.Service.UpdateCart(ctx, id, &cart)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		helper.ResponseWrite(w, id, fmt.Sprintf("Success update cart %d on user %d", id, userId))
+		helper.ResponseWrite(w, id, fmt.Sprintf("Success update cart %d on user", id))
 	}
 }
 
 func (c *CartController) DeleteCart(w http.ResponseWriter, r *http.Request) {
-	userId := r.Context().Value(middleware.GOSTORE_USERID).(int)
+	ctx := r.Context()
 	if id, s := helper.IdVarsMux(w, r); s {
-		err := c.Service.DeleteCart(userId, id)
+		err := c.Service.DeleteCart(ctx, id)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		helper.ResponseWrite(w, id, fmt.Sprintf("Success delete cart %d on user %d", id, userId))
+		helper.ResponseWrite(w, id, fmt.Sprintf("Success delete cart %d on user", id))
 	}
 }

@@ -21,7 +21,8 @@ func NewTransactionController(s service.TransactionService) *TransactionControll
 }
 
 func (tr *TransactionController) GetTransactions(w http.ResponseWriter, r *http.Request) {
-	result, err := tr.Service.GetTransactions()
+	ctx := r.Context()
+	result, err := tr.Service.GetTransactions(ctx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -31,8 +32,9 @@ func (tr *TransactionController) GetTransactions(w http.ResponseWriter, r *http.
 }
 
 func (tr *TransactionController) GetTransactionById(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	if id, s := helper.IdVarsMux(w, r); s {
-		result, err := tr.Service.GetTransactionById(id)
+		result, err := tr.Service.GetTransactionById(ctx, id)
 		if err != nil {
 			helper.RecordNotFound(w, err)
 			return
@@ -45,8 +47,6 @@ func (tr *TransactionController) GetTransactionById(w http.ResponseWriter, r *ht
 
 func (tr *TransactionController) CreateTransaction(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	userId := ctx.Value(middleware.GOSTORE_USERID).(int)
-
 	var transaction entity.Transaction
 	err := json.NewDecoder(r.Body).Decode(&transaction)
 	if err != nil {
@@ -55,50 +55,21 @@ func (tr *TransactionController) CreateTransaction(w http.ResponseWriter, r *htt
 	}
 	defer r.Body.Close()
 
-	result, err := tr.Service.CreateTransaction(userId, &transaction)
+	result, err := tr.Service.CreateTransaction(ctx, &transaction)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	message := fmt.Sprintf("Success create new transaction by user %d!", userId)
-	helper.ResponseWrite(w, result, message)
+	helper.ResponseWrite(w, result, "Success create new transaction")
 }
-
-// func (tr *TransactionController) UpdateTransaction(w http.ResponseWriter, r *http.Request) {
-// 	ctx := r.Context()
-// 	userId := ctx.Value(middleware.GOSTORE_USERID).(int)
-// 	if id, s := helper.IdVarsMux(w, r); s {
-// 		var transaction entity.Transaction
-// 		err := json.NewDecoder(r.Body).Decode(&transaction)
-// 		if err != nil {
-// 			http.Error(w, err.Error(), http.StatusInternalServerError)
-// 			return
-// 		}
-// 		defer r.Body.Close()
-
-// 		fmt.Println(transaction.UpdateAt)
-// 		if err := tr.Service.UpdateTransaction(id, &transaction, userId); err != nil {
-// 			http.Error(w, err.Error(), http.StatusInternalServerError)
-// 			return
-// 		}
-
-// 		data := map[string]any{
-// 			"total":      transaction.Total,
-// 			"status":     transaction.Status,
-// 			"updated_at": transaction.UpdateAt,
-// 		}
-// 		message := fmt.Sprintf("Success update transaction %d!", id)
-// 		helper.ResponseWrite(w, data, message)
-// 	}
-// }
 
 func (tr *TransactionController) SoftDeleteTransaction(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	userId := ctx.Value(middleware.GOSTORE_USERID).(int)
 
 	if id, s := helper.IdVarsMux(w, r); s {
-		if err := tr.Service.SoftDeleteTransaction(id, userId); err != nil {
+		if err := tr.Service.SoftDeleteTransaction(ctx, id, userId); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -111,7 +82,6 @@ func (tr *TransactionController) SoftDeleteTransaction(w http.ResponseWriter, r 
 func (tr *TransactionController) RestoreDeletedTransaction(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	userRole := ctx.Value(middleware.GOSTORE_USERROLE)
-	fmt.Println(userRole)
 
 	if userRole != "Admin" {
 		http.Error(w, "Access denied!", http.StatusUnauthorized)
@@ -119,7 +89,7 @@ func (tr *TransactionController) RestoreDeletedTransaction(w http.ResponseWriter
 	}
 
 	if id, s := helper.IdVarsMux(w, r); s {
-		if err := tr.Service.RestoreDeletedTransaction(id); err != nil {
+		if err := tr.Service.RestoreDeletedTransaction(ctx, id); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -139,12 +109,12 @@ func (tr *TransactionController) DeleteTransaction(w http.ResponseWriter, r *htt
 	}
 
 	if id, s := helper.IdVarsMux(w, r); s {
-		if _, err := tr.Service.GetTransactionById(id); err != nil {
+		if _, err := tr.Service.GetTransactionById(ctx, id); err != nil {
 			helper.RecordNotFound(w, err)
 			return
 		}
 
-		if err := tr.Service.DeleteTransaction(id); err != nil {
+		if err := tr.Service.DeleteTransaction(ctx, id); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}

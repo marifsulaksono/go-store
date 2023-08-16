@@ -26,18 +26,20 @@ type StoreResponseById struct {
 	TotalProduct int               `json:"total_product"`
 	Product      []ProductResponse `json:"product" gorm:"foreignKey:StoreId;references:Id"`
 	CreateAt     time.Time         `json:"create_at"`
+	DeleteAt     gorm.DeletedAt    `json:"-"`
 }
 
-type ProductStoreResponse struct {
+type StoreResponse struct {
 	Id        int    `json:"-"`
 	NameStore string `json:"name_store"`
 	Address   string `json:"address"`
-}
-
-func (ProductStoreResponse) TableName() string {
-	return "stores"
+	UserId    int    `json:"-"`
 }
 
 func (StoreResponseById) TableName() string {
+	return "stores"
+}
+
+func (StoreResponse) TableName() string {
 	return "stores"
 }

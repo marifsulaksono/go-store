@@ -1,13 +1,22 @@
 package entity
 
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
+
 type User struct {
-	Id          int    `json:"id"`
-	Name        string `json:"name"`
-	Username    string `json:"username"`
-	Password    string `json:"password"`
-	Email       string `json:"email"`
-	Phonenumber int    `json:"phonenumber"`
-	Role        string `json:"role"`
+	Id          int            `json:"id"`
+	Name        string         `json:"name"`
+	Username    string         `json:"username"`
+	Password    string         `json:"password"`
+	Email       string         `json:"email"`
+	Phonenumber int            `json:"phonenumber"`
+	Role        string         `json:"role"`
+	CreateAt    time.Time      `json:"create_at"`
+	UpdateAt    time.Time      `json:"update_at"`
+	DeleteAt    gorm.DeletedAt `json:"-"`
 }
 
 type UserResponse struct {
@@ -18,6 +27,11 @@ type UserResponse struct {
 	Email       string `json:"email"`
 	Phonenumber string `json:"phonenumber"`
 	Role        string `json:"role"`
+}
+
+type UserChangePassword struct {
+	OldPassword string `json:"old_password"`
+	NewPassword string `json:"new_password"`
 }
 
 type ShippingAddress struct {

@@ -1,70 +1,126 @@
 package service
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"gostore/entity"
 	"gostore/helper"
+	"gostore/middleware"
 	"gostore/repo"
+	"strings"
+	"time"
 
-	"gorm.io/gorm"
+	"golang.org/x/crypto/bcrypt"
 )
 
-type UserService struct {
+type userService struct {
 	Repo repo.UserRepository
 }
 
-func NewUserService(r repo.UserRepository) *UserService {
-	return &UserService{
+type UserService interface {
+	GetUser(id int, username string) (entity.UserResponse, error)
+	CreateUser(user *entity.User) error
+	UpdateUser(ctx context.Context, user *entity.User) error
+	ChangePasswordUser(ctx context.Context, userChange entity.UserChangePassword) error
+	DeleteUser(ctx context.Context) error
+	GetShippingAddressByUserId(ctx context.Context) ([]entity.ShippingAddress, error)
+	InsertShippingAddress(ctx context.Context, sa *entity.ShippingAddress) error
+	UpdateShippingAddress(ctx context.Context, id int, sa *entity.ShippingAddress) (entity.ShippingAddress, error)
+	DeleteShippingAddress(ctx context.Context, id int) error
+}
+
+func NewUserService(r repo.UserRepository) UserService {
+	return &userService{
 		Repo: r,
 	}
 }
 
-func (u *UserService) GetUserByUsername(username string) (entity.UserResponse, error) {
-	user, err := u.Repo.GetUserByUsername(username)
-	return user, err
+func (u *userService) GetUser(id int, username string) (entity.UserResponse, error) {
+	return u.Repo.GetUser(id, username)
 }
 
-func (u *UserService) CreateUser(user *entity.User) error {
-	userCheck, err := u.Repo.GetUserByUsername(user.Username)
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		err = u.Repo.CreateUser(user)
+func (u *userService) CreateUser(user *entity.User) error {
+	// generate password entry to be encrypt
+	hashPwd, _ := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	user.Password = string(hashPwd)
+	user.CreateAt = time.Now()
+
+	fmt.Println(user.Password)
+
+	err := u.Repo.CreateUser(user)
+	if err != nil {
+		if strings.Contains(err.Error(), "Error 1062") {
+			return helper.ErrUserExist
+		}
 		return err
-	} else if user.Username == userCheck.Username {
-		return helper.ErrUserExist
 	}
-	return err
+	return nil
 }
 
-func (u *UserService) GetShippingAddressByUserId(userId int) ([]entity.ShippingAddress, error) {
-	SA, err := u.Repo.GetShippingAddressByUserId(userId)
-	return SA, err
+func (u *userService) UpdateUser(ctx context.Context, user *entity.User) error {
+	return u.Repo.UpdateUser(ctx, user)
 }
 
-func (u *UserService) InsertShippingAddress(sa *entity.ShippingAddress) error {
-	err := u.Repo.InsertShippingAddress(sa)
-	return err
+func (u *userService) ChangePasswordUser(ctx context.Context, userChange entity.UserChangePassword) error {
+	userId := ctx.Value(middleware.GOSTORE_USERID).(int)
+	checkUser, err := u.Repo.GetUser(userId, "")
+	if err != nil {
+		return err
+	}
+	fmt.Println(checkUser.Password)
+
+	// validation old password
+	if err := bcrypt.CompareHashAndPassword([]byte(checkUser.Password), []byte(userChange.OldPassword)); err != nil {
+		return errors.New("Wrong Password")
+	}
+
+	// generate hash of new password
+	hashPwd, err := bcrypt.GenerateFromPassword([]byte(userChange.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return errors.New("Error generate password")
+	}
+
+	userChange.NewPassword = string(hashPwd)
+	return u.Repo.ChangePasswordUser(ctx, userId, userChange.NewPassword)
 }
 
-func (u *UserService) UpdateShippingAddress(userId, id int, sa *entity.ShippingAddress) (entity.ShippingAddress, error) {
-	existSA, err := u.Repo.GetShippingAddressById(id)
+func (u *userService) DeleteUser(ctx context.Context) error {
+	id := ctx.Value(middleware.GOSTORE_USERID).(int)
+	_, err := u.Repo.GetUser(id, "")
+	if err != nil {
+		return err
+	}
+
+	return u.Repo.DeleteUser(ctx)
+}
+
+func (u *userService) GetShippingAddressByUserId(ctx context.Context) ([]entity.ShippingAddress, error) {
+	return u.Repo.GetShippingAddressByUserId(ctx)
+}
+
+func (u *userService) InsertShippingAddress(ctx context.Context, sa *entity.ShippingAddress) error {
+	return u.Repo.InsertShippingAddress(ctx, sa)
+}
+
+func (u *userService) UpdateShippingAddress(ctx context.Context, id int, sa *entity.ShippingAddress) (entity.ShippingAddress, error) {
+	userId := ctx.Value(middleware.GOSTORE_USERID).(int)
+	existSA, err := u.Repo.GetShippingAddressById(ctx, id)
 	if err != nil {
 		return entity.ShippingAddress{}, err
 	}
 
+	// validation user updater is right user data
 	if existSA.UserId != userId {
 		return entity.ShippingAddress{}, helper.ErrInvalidUser
 	}
-	err = u.Repo.UpdateShippingAddress(id, &existSA, sa)
-	if err != nil {
-		return entity.ShippingAddress{}, err
-	} else if existSA, err = u.Repo.GetShippingAddressById(id); err != nil {
-		return entity.ShippingAddress{}, err
-	}
+	err = u.Repo.UpdateShippingAddress(ctx, id, &existSA, sa)
 	return existSA, err
 }
 
-func (u *UserService) DeleteShippingAddress(userId, id int) error {
-	existSA, err := u.Repo.GetShippingAddressById(id)
+func (u *userService) DeleteShippingAddress(ctx context.Context, id int) error {
+	userId := ctx.Value(middleware.GOSTORE_USERID).(int)
+	existSA, err := u.Repo.GetShippingAddressById(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -72,6 +128,6 @@ func (u *UserService) DeleteShippingAddress(userId, id int) error {
 	if existSA.UserId != userId {
 		return helper.ErrInvalidUser
 	}
-	err = u.Repo.DeleteShippingAddress(id)
-	return err
+
+	return u.Repo.DeleteShippingAddress(ctx, id)
 }

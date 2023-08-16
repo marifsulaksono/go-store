@@ -21,19 +21,51 @@ func NewProductContoller(s service.ProductService) *ProductController {
 	}
 }
 
+// func (p *ProductController) GetProducts(w http.ResponseWriter, r *http.Request) {
+// 	ctx := r.Context()
+// 	result, err := p.Service.GetAllProducts(ctx)
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusInternalServerError)
+// 		return
+// 	}
+
+// 	helper.ResponseWrite(w, result, "Success get all products")
+// }
+
 func (p *ProductController) GetProducts(w http.ResponseWriter, r *http.Request) {
-	result, err := p.Service.GetAllProducts()
+	ctx := r.Context()
+	// keyword := ""
+	keyword := r.URL.Query().Get("keyword")
+	status := r.URL.Query().Get("status")
+	sortBy := r.URL.Query().Get("sortBy")
+	order := strings.ToUpper(r.URL.Query().Get("order"))
+	minPrice, _ := strconv.Atoi(r.URL.Query().Get("minPrice"))
+	maxPrice, _ := strconv.Atoi(r.URL.Query().Get("maxPrice"))
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	categoryId, _ := strconv.Atoi(r.URL.Query().Get("categoryId"))
+	storeId, _ := strconv.Atoi(r.URL.Query().Get("storeId"))
+
+	products, err := p.Service.GetAllProducts(ctx, keyword, status, order, sortBy, minPrice, maxPrice, categoryId, storeId, limit, page)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	helper.ResponseWrite(w, result, "Success get all products")
+	if products == nil || len(products) < 1 {
+		w.Write([]byte("No product found!"))
+		return
+	}
+
+	// message := fmt.Sprintln("Success search products")
+	helper.ResponseWrite(w, products, "Success search products")
+	// localhost:49999/product/search?keyword=tas&sortBy=name&order=desc&minPrice=0&maxPrice=1000000&limit=5&page=0
 }
 
 func (p *ProductController) GetProductbyId(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	if id, s := helper.IdVarsMux(w, r); s {
-		result, err := p.Service.GetProductbyId(id)
+		result, err := p.Service.GetProductbyId(ctx, id)
 		if err != nil {
 			helper.RecordNotFound(w, err)
 			return
@@ -44,33 +76,8 @@ func (p *ProductController) GetProductbyId(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-func (p *ProductController) SearchProduct(w http.ResponseWriter, r *http.Request) {
-	// keyword := ""
-	keyword := r.URL.Query().Get("keyword")
-	sortBy := r.URL.Query().Get("sortBy")
-	order := strings.ToUpper(r.URL.Query().Get("order"))
-	minPrice, _ := strconv.Atoi(r.URL.Query().Get("minPrice"))
-	fmt.Printf("maxPrice: %v\n", minPrice)
-	maxPrice, _ := strconv.Atoi(r.URL.Query().Get("maxPrice"))
-	fmt.Printf("maxPrice: %v\n", maxPrice)
-	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
-	categoryId, _ := strconv.Atoi(r.URL.Query().Get("categoryId"))
-	storeId, _ := strconv.Atoi(r.URL.Query().Get("storeId"))
-	fmt.Printf("%v, %v, %v, %v, %v, %v, %v | ", keyword, sortBy, order, minPrice, maxPrice, limit, page)
-
-	products, err := p.Service.SearchProduct(keyword, order, sortBy, minPrice, maxPrice, categoryId, storeId, limit, page)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	message := fmt.Sprintf("Success search product with keyword %v", keyword)
-	helper.ResponseWrite(w, products, message)
-	// localhost:49999/product/search?keyword=tas&sortBy=name&order=desc&minPrice=0&maxPrice=1000000&limit=5&page=0
-}
-
 func (p *ProductController) InsertProduct(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	var product entity.Product
 	err := json.NewDecoder(r.Body).Decode(&product)
 	if err != nil {
@@ -79,7 +86,7 @@ func (p *ProductController) InsertProduct(w http.ResponseWriter, r *http.Request
 	}
 	defer r.Body.Close()
 
-	if err := p.Service.InsertProduct(&product); err != nil {
+	if err := p.Service.InsertProduct(ctx, &product); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -89,6 +96,7 @@ func (p *ProductController) InsertProduct(w http.ResponseWriter, r *http.Request
 }
 
 func (p *ProductController) UpdateProduct(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	if id, s := helper.IdVarsMux(w, r); s {
 		var product entity.Product
 		err := json.NewDecoder(r.Body).Decode(&product)
@@ -98,61 +106,69 @@ func (p *ProductController) UpdateProduct(w http.ResponseWriter, r *http.Request
 		}
 		defer r.Body.Close()
 
-		result, err := p.Service.UpdateProduct(id, &product)
+		err = p.Service.UpdateProduct(ctx, id, &product)
 		if err != nil {
 			helper.RecordNotFound(w, err)
 			return
 		}
 
 		message := fmt.Sprintf("Success update product %d", id)
-		helper.ResponseWrite(w, result, message)
+		helper.ResponseWrite(w, product, message)
 	}
 }
 
-func (p *ProductController) SoldoutsProduct(w http.ResponseWriter, r *http.Request) {
-	result, err := p.Service.GetProductbyStatus("soldout")
-	if err != nil {
-		helper.RecordNotFound(w, err)
-		return
-	}
+// func (p *ProductController) SoldoutsProduct(w http.ResponseWriter, r *http.Request) {
+// 	ctx := r.Context()
+// 	result, err := p.Service.GetProductbyStatus(ctx, "soldout")
+// 	if err != nil {
+// 		helper.RecordNotFound(w, err)
+// 		return
+// 	}
 
-	if result == nil || len(result) < 1 {
-		w.Write([]byte("No product found!"))
-		return
-	}
+// 	if result == nil || len(result) < 1 {
+// 		w.Write([]byte("No product found!"))
+// 		return
+// 	}
 
-	helper.ResponseWrite(w, result, "Success get all soldouts product")
-}
+// 	helper.ResponseWrite(w, result, "Success get all soldouts product")
+// }
 
-func (p *ProductController) ChangeProducttoSale(w http.ResponseWriter, r *http.Request) {
-	if id, s := helper.IdVarsMux(w, r); s {
-		err := p.Service.ChangeStatusProduct(id, "sale")
-		if err != nil {
-			helper.RecordNotFound(w, err)
-			return
-		}
+// func (p *ProductController) ChangeProducttoSale(w http.ResponseWriter, r *http.Request) {
+// 	ctx := r.Context()
+// 	// status := r.URL.Query().Get("status")
+// 	// if status != "sold" || status != "soldout" {
+// 	// }
 
-		message := fmt.Sprintf("Product %d is sale now", id)
-		helper.ResponseWrite(w, id, message)
-	}
-}
+// 	if id, s := helper.IdVarsMux(w, r); s {
+// 		err := p.Service.ChangeStatusProduct(ctx, id, "sale")
+// 		if err != nil {
+// 			helper.RecordNotFound(w, err)
+// 			return
+// 		}
 
-func (p *ProductController) ChangeProducttoSoldout(w http.ResponseWriter, r *http.Request) {
-	if id, s := helper.IdVarsMux(w, r); s {
-		err := p.Service.ChangeStatusProduct(id, "soldout")
-		if err != nil {
-			helper.RecordNotFound(w, err)
-			return
-		}
+// 		message := fmt.Sprintf("Product %d is sale now", id)
+// 		helper.ResponseWrite(w, id, message)
+// 	}
+// }
 
-		message := fmt.Sprintf("Product %d is soldout now", id)
-		helper.ResponseWrite(w, id, message)
-	}
-}
+// func (p *ProductController) ChangeProducttoSoldout(w http.ResponseWriter, r *http.Request) {
+// 	ctx := r.Context()
+// 	if id, s := helper.IdVarsMux(w, r); s {
+// 		err := p.Service.ChangeStatusProduct(ctx, id, "soldout")
+// 		if err != nil {
+// 			helper.RecordNotFound(w, err)
+// 			return
+// 		}
+
+// 		message := fmt.Sprintf("Product %d is soldout now", id)
+// 		helper.ResponseWrite(w, id, message)
+// 	}
+// }
 
 func (p *ProductController) SoftDeleteProduct(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	if id, s := helper.IdVarsMux(w, r); s {
-		if err := p.Service.SoftDeleteProduct(id); err != nil {
+		if err := p.Service.SoftDeleteProduct(ctx, id); err != nil {
 			helper.RecordNotFound(w, err)
 			return
 		}
@@ -163,8 +179,9 @@ func (p *ProductController) SoftDeleteProduct(w http.ResponseWriter, r *http.Req
 }
 
 func (p *ProductController) RestoreDeletedProduct(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	if id, s := helper.IdVarsMux(w, r); s {
-		err := p.Service.RestoreDeletedProduct(id)
+		err := p.Service.RestoreDeletedProduct(ctx, id)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -176,13 +193,14 @@ func (p *ProductController) RestoreDeletedProduct(w http.ResponseWriter, r *http
 }
 
 func (p *ProductController) DeleteProduct(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	if id, s := helper.IdVarsMux(w, r); s {
-		if err := p.Service.DeleteProduct(id); err != nil {
+		if err := p.Service.DeleteProduct(ctx, id); err != nil {
 			helper.RecordNotFound(w, err)
 			return
 		}
 
-		message := fmt.Sprintf("Success delete permanently product %d", id)
-		helper.ResponseWrite(w, id, message)
+		// message := fmt.Sprintf("Success delete permanently product %d", id)
+		helper.ResponseWrite(w, id, fmt.Sprintf("Success delete permanently product %d", id))
 	}
 }
