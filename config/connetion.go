@@ -7,9 +7,8 @@ import (
 
 // var DB *gorm.DB
 
-func Connect() *gorm.DB {
-	newDB := "root:@tcp(127.0.0.1:3306)/db_store?parseTime=true"
-	DB, err := gorm.Open(mysql.Open(newDB), &gorm.Config{})
+func Connect(conf Config) *gorm.DB {
+	DB, err := gorm.Open(mysql.Open(conf.DatabaseURL), &gorm.Config{})
 	if err != nil {
 		panic("Connection failed!")
 	}
