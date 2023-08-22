@@ -15,22 +15,11 @@ type ProductController struct {
 	Service service.ProductService
 }
 
-func NewProductContoller(s service.ProductService) *ProductController {
+func NewProductController(s service.ProductService) *ProductController {
 	return &ProductController{
 		Service: s,
 	}
 }
-
-// func (p *ProductController) GetProducts(w http.ResponseWriter, r *http.Request) {
-// 	ctx := r.Context()
-// 	result, err := p.Service.GetAllProducts(ctx)
-// 	if err != nil {
-// 		http.Error(w, err.Error(), http.StatusInternalServerError)
-// 		return
-// 	}
-
-// 	helper.ResponseWrite(w, result, "Success get all products")
-// }
 
 func (p *ProductController) GetProducts(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -57,7 +46,6 @@ func (p *ProductController) GetProducts(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// message := fmt.Sprintln("Success search products")
 	helper.ResponseWrite(w, products, "Success search products")
 	// localhost:49999/product/search?keyword=tas&sortBy=name&order=desc&minPrice=0&maxPrice=1000000&limit=5&page=0
 }
@@ -67,12 +55,11 @@ func (p *ProductController) GetProductbyId(w http.ResponseWriter, r *http.Reques
 	if id, s := helper.IdVarsMux(w, r); s {
 		result, err := p.Service.GetProductbyId(ctx, id)
 		if err != nil {
-			helper.RecordNotFound(w, err)
+			helper.BuildError(w, err)
 			return
 		}
 
-		message := fmt.Sprintf("Success get product %d", id)
-		helper.ResponseWrite(w, result, message)
+		helper.BuildResponseSuccess(w, result, "")
 	}
 }
 
@@ -116,54 +103,6 @@ func (p *ProductController) UpdateProduct(w http.ResponseWriter, r *http.Request
 		helper.ResponseWrite(w, product, message)
 	}
 }
-
-// func (p *ProductController) SoldoutsProduct(w http.ResponseWriter, r *http.Request) {
-// 	ctx := r.Context()
-// 	result, err := p.Service.GetProductbyStatus(ctx, "soldout")
-// 	if err != nil {
-// 		helper.RecordNotFound(w, err)
-// 		return
-// 	}
-
-// 	if result == nil || len(result) < 1 {
-// 		w.Write([]byte("No product found!"))
-// 		return
-// 	}
-
-// 	helper.ResponseWrite(w, result, "Success get all soldouts product")
-// }
-
-// func (p *ProductController) ChangeProducttoSale(w http.ResponseWriter, r *http.Request) {
-// 	ctx := r.Context()
-// 	// status := r.URL.Query().Get("status")
-// 	// if status != "sold" || status != "soldout" {
-// 	// }
-
-// 	if id, s := helper.IdVarsMux(w, r); s {
-// 		err := p.Service.ChangeStatusProduct(ctx, id, "sale")
-// 		if err != nil {
-// 			helper.RecordNotFound(w, err)
-// 			return
-// 		}
-
-// 		message := fmt.Sprintf("Product %d is sale now", id)
-// 		helper.ResponseWrite(w, id, message)
-// 	}
-// }
-
-// func (p *ProductController) ChangeProducttoSoldout(w http.ResponseWriter, r *http.Request) {
-// 	ctx := r.Context()
-// 	if id, s := helper.IdVarsMux(w, r); s {
-// 		err := p.Service.ChangeStatusProduct(ctx, id, "soldout")
-// 		if err != nil {
-// 			helper.RecordNotFound(w, err)
-// 			return
-// 		}
-
-// 		message := fmt.Sprintf("Product %d is soldout now", id)
-// 		helper.ResponseWrite(w, id, message)
-// 	}
-// }
 
 func (p *ProductController) SoftDeleteProduct(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()

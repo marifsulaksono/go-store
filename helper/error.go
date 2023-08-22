@@ -1,16 +1,22 @@
 package helper
 
-import "errors"
+import (
+	"errors"
+)
+
+const (
+	InternalServerError  string = "INTERNAL_SERVER_ERROR"
+	ProductNotFoundError string = "PRODUCT_NOT_FOUND"
+)
 
 var (
-	ErrAccDeny         = errors.New("Access Denied")
-	ErrProductNotFound = errors.New("Product not found or soldout")
-	ErrRecDeleted      = errors.New("Record was deleted")
-	ErrRecRestored     = errors.New("Record was restored")
-	ErrStockNotEnough  = errors.New("Stock product isn't enough")
-	ErrUserExist       = errors.New("Username already exist")
-	ErrInvalidUser     = errors.New("Unauthorized, invalid user")
-	ErrInvalidSA       = errors.New("Invalid Shipping Address")
-	ErrDuplicateStore  = errors.New("User allowed has one store only")
-	ErrAddProductTo    = errors.New("cannot add your product's store to your cart/transaction")
+	ErrAccDeny        = errors.New("access Denied")
+	ErrRecDeleted     = errors.New("record was deleted")
+	ErrRecRestored    = errors.New("record was restored")
+	ErrStockNotEnough = errors.New("stock product isn't enough")
+	ErrUserExist      = errors.New("username already exist")
+	ErrInvalidUser    = errors.New("unauthorized, invalid user")
+	ErrInvalidSA      = errors.New("invalid Shipping Address")
+	ErrDuplicateStore = errors.New("user allowed has one store only")
+	ErrAddProductTo   = errors.New("cannot add your product's store to your cart/transaction")
 )

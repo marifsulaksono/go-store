@@ -19,8 +19,6 @@ type ProductService interface {
 	SoftDeleteProduct(ctx context.Context, id int) error
 	RestoreDeletedProduct(ctx context.Context, id int) error
 	DeleteProduct(ctx context.Context, id int) error
-	// GetProductbyStatus(ctx context.Context, s string) ([]entity.Product, error)
-	// SearchProduct(ctx context.Context, keyword, order, sortBy string, minPrice, maxPrice, categoryId, storeId, limit, page int) ([]entity.Product, error)
 }
 
 func NewProductService(r repo.ProductRepository) ProductService {
@@ -28,20 +26,6 @@ func NewProductService(r repo.ProductRepository) ProductService {
 		Repo: r,
 	}
 }
-
-// func (p *productService) GetAllProductss(ctx context.Context) ([]entity.Product, error) {
-// 	products, err := p.Repo.GetAllProducts(ctx)
-// 	return products, err
-// }
-
-func (p *productService) GetProductbyId(ctx context.Context, id int) (entity.Product, error) {
-	return p.Repo.GetProductById(ctx, id)
-}
-
-// func (p *productService) GetProductbyStatus(ctx context.Context, s string) ([]entity.Product, error) {
-// 	products, err := p.Repo.GetProductByStatus(ctx, s)
-// 	return products, err
-// }
 
 func (p *productService) GetAllProducts(ctx context.Context, keyword, status, order, sortBy string,
 	minPrice, maxPrice, categoryId, storeId, limit, page int) ([]entity.Product, error) {
@@ -71,6 +55,10 @@ func (p *productService) GetAllProducts(ctx context.Context, keyword, status, or
 	return p.Repo.GetAllProducts(ctx, keyword, status, order, sortBy, minPrice, maxPrice, categoryId, storeId, limit, offset)
 }
 
+func (p *productService) GetProductbyId(ctx context.Context, id int) (entity.Product, error) {
+	return p.Repo.GetProductById(ctx, id)
+}
+
 func (p *productService) InsertProduct(ctx context.Context, product *entity.Product) error {
 	product.Status = "sale"
 	return p.Repo.InsertProduct(ctx, product)
@@ -90,18 +78,6 @@ func (p *productService) UpdateProduct(ctx context.Context, id int, product *ent
 
 	return p.Repo.UpdateProduct(ctx, id, product)
 }
-
-// func (p *productService) ChangeStatusProduct(ctx context.Context, id int, s string) error {
-// 	productCheck, err := p.Repo.GetProductById(ctx, id)
-// 	if err != nil {
-// 		return err
-// 	} else if productCheck.Status == s {
-// 		return helper.ErrChangeStatusProduct
-// 	}
-
-// 	err = p.Repo.ChangeStatusProduct(ctx, id, s)
-// 	return err
-// }
 
 func (p *productService) SoftDeleteProduct(ctx context.Context, id int) error {
 	_, err := p.Repo.GetProductById(ctx, id)
