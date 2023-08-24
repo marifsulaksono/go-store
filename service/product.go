@@ -12,7 +12,7 @@ type productService struct {
 }
 
 type ProductService interface {
-	GetAllProducts(ctx context.Context, keyword, status, order, sortBy string, minPrice, maxPrice, categoryId, storeId, limit, page int) ([]entity.Product, error)
+	GetAllProducts(ctx context.Context, keyword, status, order, sortBy string, minPrice, maxPrice, categoryId, storeId, limit, page int) ([]entity.Product, helper.Page, error)
 	GetProductbyId(ctx context.Context, id int) (entity.Product, error)
 	InsertProduct(ctx context.Context, product *entity.Product) error
 	UpdateProduct(ctx context.Context, id int, product *entity.Product) error
@@ -28,7 +28,11 @@ func NewProductService(r repo.ProductRepository) ProductService {
 }
 
 func (p *productService) GetAllProducts(ctx context.Context, keyword, status, order, sortBy string,
-	minPrice, maxPrice, categoryId, storeId, limit, page int) ([]entity.Product, error) {
+	minPrice, maxPrice, categoryId, storeId, limit, page int) ([]entity.Product, helper.Page, error) {
+	var (
+		totalPage int
+	)
+
 	// order by default is ASC
 	if order != "DESC" {
 		order = "ASC"
@@ -52,7 +56,25 @@ func (p *productService) GetAllProducts(ctx context.Context, keyword, status, or
 	// pagination formula
 	offset := (page - 1) * limit
 
-	return p.Repo.GetAllProducts(ctx, keyword, status, order, sortBy, minPrice, maxPrice, categoryId, storeId, limit, offset)
+	result, err, count := p.Repo.GetAllProducts(ctx, keyword, status, order, sortBy, minPrice, maxPrice, categoryId, storeId, limit, offset)
+	if err != nil {
+		return []entity.Product{}, helper.Page{}, err
+	}
+
+	if int(count)%limit == 0 {
+		totalPage = int(count) / limit
+	} else {
+		totalPage = (int(count) / limit) + 1
+	}
+
+	pagination := helper.Page{
+		Limit:     limit,
+		Total:     int(count),
+		Page:      page,
+		TotalPage: totalPage,
+	}
+
+	return result, pagination, err
 }
 
 func (p *productService) GetProductbyId(ctx context.Context, id int) (entity.Product, error) {

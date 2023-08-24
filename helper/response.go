@@ -12,10 +12,11 @@ import (
 )
 
 type response struct {
-	Data    interface{}   `json:"data,omitempty"`
-	Message string        `json:"message,omitempty"`
-	Code    string        `json:"error_code,omitempty"`
-	Details []DetailError `json:"detail_error,omitempty"`
+	Data     interface{}   `json:"data,omitempty"`
+	Metadata interface{}   `json:"metadata,omitempty"`
+	Message  string        `json:"message,omitempty"`
+	Code     string        `json:"error_code,omitempty"`
+	Details  []DetailError `json:"detail_error,omitempty"`
 }
 
 type DetailError struct {
@@ -23,9 +24,17 @@ type DetailError struct {
 	Desc  string `json:"desc,omitempty"`
 }
 
-func buildResponse(data interface{}, message string, code string, err []DetailError) response {
+func buildResponseSuccess(data interface{}, metadata interface{}, message string) response {
 	var res response
 	res.Data = data
+	res.Metadata = metadata
+	res.Message = message
+
+	return res
+}
+
+func buildResponseError(message string, code string, err []DetailError) response {
+	var res response
 	res.Code = code
 	res.Message = message
 	res.Details = err
@@ -33,28 +42,92 @@ func buildResponse(data interface{}, message string, code string, err []DetailEr
 	return res
 }
 
-func BuildResponseSuccess(w http.ResponseWriter, data interface{}, message string) {
+func BuildResponseSuccess(w http.ResponseWriter, data interface{}, metadata interface{}, message string) {
+	payload := buildResponseSuccess(data, metadata, message)
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(buildResponse(data, message, "", nil))
+	w.Write(jsonData)
 }
 
 func BuildError(w http.ResponseWriter, err error) {
-	switch err {
-	case gorm.ErrRecordNotFound:
+	switch {
+	case errors.Is(err, gorm.ErrRecordNotFound):
 		buildErrNotFound(w, ProductNotFoundError, "the ID provided is not found")
+	case isBadRequestError(err):
+		buildBadRequest(w, BadRequestError, err.Error())
 	default:
 		buildErrInternalServer(w, InternalServerError, err)
 	}
 }
 
 func buildErrNotFound(w http.ResponseWriter, code string, message string) {
+	var response = buildResponseError(message, code, nil)
+	jsonData, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(http.StatusNotFound)
+	w.Write(jsonData)
+}
+
+func buildBadRequest(w http.ResponseWriter, code string, message string) {
+	var response = buildResponseError(message, code, nil)
+	jsonData, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(http.StatusBadRequest)
-	json.NewEncoder(w).Encode(buildResponse(nil, message, code, nil))
+	w.Write(jsonData)
 }
 
 func buildErrInternalServer(w http.ResponseWriter, code string, err error) {
+	var response = buildResponseError(err.Error(), code, nil)
+	jsonData, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(http.StatusInternalServerError)
-	json.NewEncoder(w).Encode(buildResponse(nil, err.Error(), code, []DetailError{}))
+	w.Write(jsonData)
+}
+
+func isBadRequestError(err error) bool {
+	var a bool
+
+	switch err {
+	case ErrRecDeleted:
+		a = true
+	case ErrRecRestored:
+		a = true
+	case ErrUserExist:
+		a = true
+	case ErrStockNotEnough:
+		a = true
+	case ErrInvalidSA:
+		a = true
+	case ErrDuplicateStore:
+		a = true
+	case ErrAddProductTo:
+		a = true
+	default:
+		a = false
+	}
+
+	return a
 }
 
 func ResponseWrite(w http.ResponseWriter, data interface{}, message string) {

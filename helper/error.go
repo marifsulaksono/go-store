@@ -7,6 +7,7 @@ import (
 const (
 	InternalServerError  string = "INTERNAL_SERVER_ERROR"
 	ProductNotFoundError string = "PRODUCT_NOT_FOUND"
+	BadRequestError      string = "BAD_REQUEST"
 )
 
 var (

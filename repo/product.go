@@ -12,7 +12,7 @@ type productRepository struct {
 }
 
 type ProductRepository interface {
-	GetAllProducts(ctx context.Context, keyword, status, order, sortBy string, minPrice, maxPrice, categoryId, storeId, limit, offset int) ([]entity.Product, error)
+	GetAllProducts(ctx context.Context, keyword, status, order, sortBy string, minPrice, maxPrice, categoryId, storeId, limit, offset int) ([]entity.Product, error, int64)
 	GetProductById(ctx context.Context, id int) (entity.Product, error)
 	GetDeletedProduct(ctx context.Context, id int) (entity.Product, error)
 	InsertProduct(ctx context.Context, product *entity.Product) error
@@ -21,9 +21,6 @@ type ProductRepository interface {
 	SoftDeleteProduct(ctx context.Context, id int) error
 	RestoreDeletedProduct(ctx context.Context, id int) error
 	DeleteProduct(ctx context.Context, id int) error
-	// GetAllProducts(ctx context.Context) ([]entity.Product, error)
-	// GetProductByStatus(ctx context.Context, s string) ([]entity.Product, error)
-	// UpdateStockandSold(ctx context.Context, id int, product *entity.Product) error
 }
 
 func NewProductRepository(db *gorm.DB) ProductRepository {
@@ -32,17 +29,12 @@ func NewProductRepository(db *gorm.DB) ProductRepository {
 	}
 }
 
-// func (p *productRepository) GetAllProducts(ctx context.Context) ([]entity.Product, error) {
-// 	var products []entity.Product
-// 	err := p.DB.Preload("Category").Preload("Store").Find(&products).Error
-// 	return products, err
-// }
-
 func (p *productRepository) GetAllProducts(ctx context.Context, keyword, status, order, sortBy string,
-	minPrice, maxPrice, categoryId, storeId, limit, offset int) ([]entity.Product, error) {
+	minPrice, maxPrice, categoryId, storeId, limit, offset int) ([]entity.Product, error, int64) {
 	var (
 		products []entity.Product
 		db       = p.DB
+		count    int64
 	)
 
 	if status != "" {
@@ -70,11 +62,8 @@ func (p *productRepository) GetAllProducts(ctx context.Context, keyword, status,
 	}
 
 	err := db.Order(sortBy +
-		" " + order).Limit(limit).Offset(offset).Preload("Category").Preload("Store").Find(&products).Error
-
-	// err := p.DB.Where("name LIKE ? AND price BETWEEN ? AND ?", "%"+keyword+"%", minPrice, maxPrice).Order(sortBy +
-	// 	" " + order).Limit(limit).Offset(offset).Preload("Category").Find(&products).Error
-	return products, err
+		" " + order).Limit(limit).Offset(offset).Preload("Category").Preload("Store").Find(&products).Count(&count).Error
+	return products, err, count
 }
 
 func (p *productRepository) GetProductById(ctx context.Context, id int) (entity.Product, error) {
@@ -110,12 +99,6 @@ func (p *productRepository) UpdateProduct(ctx context.Context, id int, product *
 	}
 	return p.DB.Model(&entity.Product{}).Where("id = ?", id).Updates(updateProducts).Error
 }
-
-// func (p *productRepository) UpdateStockandSold(ctx context.Context, id int, product *entity.Product) error {
-// 	// err := tx.Model(&entity.Product{}).Select("stock", "sold").Where("id = ?", id).Updates(product).Error
-// 	err := p.DB.Where("id = ?", id).Save(&product).Error
-// 	return err
-// }
 
 func (p *productRepository) ChangeStatusProduct(ctx context.Context, id int, s string) error {
 	return p.DB.Model(&entity.Product{}).Where("id = ?", id).Update("status", s).Error
