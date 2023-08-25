@@ -19,7 +19,7 @@ type storeService struct {
 type StoreService interface {
 	GetAllStore(ctx context.Context) ([]entity.Store, error)
 	GetStoreById(ctx context.Context, id int) (entity.StoreResponseById, error)
-	CreateStore(ctx context.Context, store *entity.Store) (entity.Store, error)
+	CreateStore(ctx context.Context, store *entity.Store) error
 	UpdateStore(ctx context.Context, id int, store *entity.Store) error
 	SoftDeleteStore(ctx context.Context, id int) error
 	RestoreDeletedStore(ctx context.Context, id int) error
@@ -43,7 +43,7 @@ func (s *storeService) GetStoreById(ctx context.Context, id int) (entity.StoreRe
 	return result, err
 }
 
-func (s *storeService) CreateStore(ctx context.Context, store *entity.Store) (entity.Store, error) {
+func (s *storeService) CreateStore(ctx context.Context, store *entity.Store) error {
 	userId := ctx.Value(middleware.GOSTORE_USERID).(int)
 	store.Status = "active"
 	store.UserId = userId
@@ -51,11 +51,11 @@ func (s *storeService) CreateStore(ctx context.Context, store *entity.Store) (en
 	err := s.Repo.CreateStore(ctx, store)
 	if err != nil {
 		if strings.Contains(err.Error(), "Error 1062") {
-			return entity.Store{}, helper.ErrDuplicateStore
+			return helper.ErrDuplicateStore
 		}
-		return entity.Store{}, err
+		return err
 	}
-	return *store, nil
+	return nil
 }
 
 func (s *storeService) UpdateStore(ctx context.Context, id int, store *entity.Store) error {
