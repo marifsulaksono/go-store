@@ -2,8 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"gostore/entity"
 	"gostore/helper"
 	"gostore/middleware"
@@ -26,7 +24,7 @@ type UserService interface {
 	DeleteUser(ctx context.Context) error
 	GetShippingAddressByUserId(ctx context.Context) ([]entity.ShippingAddress, error)
 	InsertShippingAddress(ctx context.Context, sa *entity.ShippingAddress) error
-	UpdateShippingAddress(ctx context.Context, id int, sa *entity.ShippingAddress) (entity.ShippingAddress, error)
+	UpdateShippingAddress(ctx context.Context, id int, sa *entity.ShippingAddress) error
 	DeleteShippingAddress(ctx context.Context, id int) error
 }
 
@@ -45,8 +43,6 @@ func (u *userService) CreateUser(user *entity.User) error {
 	hashPwd, _ := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	user.Password = string(hashPwd)
 	user.CreateAt = time.Now()
-
-	fmt.Println(user.Password)
 
 	err := u.Repo.CreateUser(user)
 	if err != nil {
@@ -68,17 +64,16 @@ func (u *userService) ChangePasswordUser(ctx context.Context, userChange entity.
 	if err != nil {
 		return err
 	}
-	fmt.Println(checkUser.Password)
 
 	// validation old password
 	if err := bcrypt.CompareHashAndPassword([]byte(checkUser.Password), []byte(userChange.OldPassword)); err != nil {
-		return errors.New("Wrong Password")
+		return helper.ErrWrongOldPassword
 	}
 
 	// generate hash of new password
 	hashPwd, err := bcrypt.GenerateFromPassword([]byte(userChange.NewPassword), bcrypt.DefaultCost)
 	if err != nil {
-		return errors.New("Error generate password")
+		return err
 	}
 
 	userChange.NewPassword = string(hashPwd)
@@ -103,19 +98,19 @@ func (u *userService) InsertShippingAddress(ctx context.Context, sa *entity.Ship
 	return u.Repo.InsertShippingAddress(ctx, sa)
 }
 
-func (u *userService) UpdateShippingAddress(ctx context.Context, id int, sa *entity.ShippingAddress) (entity.ShippingAddress, error) {
+func (u *userService) UpdateShippingAddress(ctx context.Context, id int, sa *entity.ShippingAddress) error {
 	userId := ctx.Value(middleware.GOSTORE_USERID).(int)
 	existSA, err := u.Repo.GetShippingAddressById(ctx, id)
 	if err != nil {
-		return entity.ShippingAddress{}, err
+		return err
 	}
 
 	// validation user updater is right user data
 	if existSA.UserId != userId {
-		return entity.ShippingAddress{}, helper.ErrInvalidUser
+		return helper.ErrInvalidUser
 	}
 	err = u.Repo.UpdateShippingAddress(ctx, id, &existSA, sa)
-	return existSA, err
+	return err
 }
 
 func (u *userService) DeleteShippingAddress(ctx context.Context, id int) error {

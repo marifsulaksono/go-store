@@ -29,18 +29,17 @@ func (u *UserController) Register(w http.ResponseWriter, r *http.Request) {
 	var user entity.User
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		helper.BuildError(w, err)
 		return
 	}
 	defer r.Body.Close()
 
 	if err := u.Service.CreateUser(&user); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		helper.BuildError(w, err)
 		return
 	}
 
-	user.Password = ""
-	helper.ResponseWrite(w, user, "Register success!")
+	helper.BuildResponseSuccess(w, nil, nil, "Register success")
 }
 
 func (u *UserController) Login(w http.ResponseWriter, r *http.Request) {
@@ -48,7 +47,8 @@ func (u *UserController) Login(w http.ResponseWriter, r *http.Request) {
 	// Basic Authentication
 	username, password, ok := r.BasicAuth()
 	if !ok {
-		w.Write([]byte("Unauthorized!"))
+		helper.BuildError(w, helper.ErrLoginAcc)
+		fmt.Println("BasicAuth required")
 	}
 
 	// Check user validation on database
@@ -57,17 +57,17 @@ func (u *UserController) Login(w http.ResponseWriter, r *http.Request) {
 	userLogin, err = u.Service.GetUser(0, username)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			http.Error(w, "Username/password is wrong!", http.StatusUnauthorized)
+			helper.BuildError(w, helper.ErrLoginAcc)
 			return
 		} else {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			helper.BuildError(w, err)
 			return
 		}
 	}
 
 	// Check password validation
 	if err := bcrypt.CompareHashAndPassword([]byte(userLogin.Password), []byte(password)); err != nil {
-		http.Error(w, "Username/password is wrong!", http.StatusUnauthorized)
+		helper.BuildError(w, helper.ErrLoginAcc)
 		return
 	}
 
@@ -87,31 +87,36 @@ func (u *UserController) Login(w http.ResponseWriter, r *http.Request) {
 	tokenAlgorithm := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := tokenAlgorithm.SignedString(middleware.JWT_SECRET_KEY)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		helper.BuildError(w, err)
 		return
 	}
 
-	message := fmt.Sprintf("Login success, welcome %s!", userLogin.Name)
-	helper.ResponseWrite(w, tokenString, message)
+	metadata := helper.UserInfo{
+		Username: userLogin.Username,
+		Name:     userLogin.Name,
+		Role:     userLogin.Role,
+	}
+
+	// message := fmt.Sprintf("Login success, welcome %s!", userLogin.Name)
+	helper.BuildResponseSuccess(w, tokenString, metadata, "Login success")
 }
 
 func (u *UserController) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-
 	var user entity.User
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		helper.BuildError(w, err)
 		return
 	}
 
 	err = u.Service.UpdateUser(ctx, &user)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		helper.BuildError(w, err)
 		return
 	}
 
-	helper.ResponseWrite(w, user, "Success update user profile")
+	helper.BuildResponseSuccess(w, nil, nil, "Success update user's profile")
 }
 
 func (u *UserController) ChangePasswordUser(w http.ResponseWriter, r *http.Request) {
@@ -119,40 +124,45 @@ func (u *UserController) ChangePasswordUser(w http.ResponseWriter, r *http.Reque
 	var userChange entity.UserChangePassword
 	err := json.NewDecoder(r.Body).Decode(&userChange)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		helper.BuildError(w, err)
 		return
 	}
 
 	err = u.Service.ChangePasswordUser(ctx, userChange)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		helper.BuildError(w, err)
 		return
 	}
 
-	helper.ResponseWrite(w, nil, "Success change password")
+	helper.BuildResponseSuccess(w, nil, nil, "Success change password")
 }
 
 func (u *UserController) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	err := u.Service.DeleteUser(ctx)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		helper.BuildError(w, err)
 		return
 	}
 
 	message := fmt.Sprintf("Success delete user %d", ctx.Value(middleware.GOSTORE_USERID))
-	helper.ResponseWrite(w, nil, message)
+	helper.BuildResponseSuccess(w, nil, nil, message)
 }
 
 func (u *UserController) GetShippingAddressByUserId(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	result, err := u.Service.GetShippingAddressByUserId(ctx)
 	if err != nil {
-		helper.RecordNotFound(w, err)
+		helper.BuildError(w, err)
 		return
 	}
 
-	helper.ResponseWrite(w, result, "Success get shipping address")
+	if result == nil || len(result) < 1 {
+		helper.BuildResponseSuccess(w, result, nil, "No results found")
+		return
+	}
+
+	helper.BuildResponseSuccess(w, result, nil, "")
 }
 
 func (u *UserController) InsertShippingAddress(w http.ResponseWriter, r *http.Request) {
@@ -160,17 +170,17 @@ func (u *UserController) InsertShippingAddress(w http.ResponseWriter, r *http.Re
 	var SA entity.ShippingAddress
 	err := json.NewDecoder(r.Body).Decode(&SA)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		helper.BuildError(w, err)
 		return
 	}
 	defer r.Body.Close()
 
 	if err := u.Service.InsertShippingAddress(ctx, &SA); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		helper.BuildError(w, err)
 		return
 	}
 
-	helper.ResponseWrite(w, SA, "Success add shipping address")
+	helper.BuildResponseSuccess(w, nil, nil, "Success create new shipping address")
 }
 
 func (u *UserController) UpdateShippingAddress(w http.ResponseWriter, r *http.Request) {
@@ -179,18 +189,18 @@ func (u *UserController) UpdateShippingAddress(w http.ResponseWriter, r *http.Re
 		var SA entity.ShippingAddress
 		err := json.NewDecoder(r.Body).Decode(&SA)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			helper.BuildError(w, err)
 			return
 		}
 		defer r.Body.Close()
 
-		result, err := u.Service.UpdateShippingAddress(ctx, id, &SA)
+		err = u.Service.UpdateShippingAddress(ctx, id, &SA)
 		if err != nil {
-			helper.RecordNotFound(w, err)
+			helper.BuildError(w, err)
 			return
 		}
 
-		helper.ResponseWrite(w, result, "Success update shipping address")
+		helper.BuildResponseSuccess(w, nil, nil, "Success update shipping address")
 	}
 }
 
@@ -199,10 +209,10 @@ func (u *UserController) DeleteShippingAddress(w http.ResponseWriter, r *http.Re
 	if id, s := helper.IdVarsMux(w, r); s {
 		err := u.Service.DeleteShippingAddress(ctx, id)
 		if err != nil {
-			helper.RecordNotFound(w, err)
+			helper.BuildError(w, err)
 			return
 		}
 
-		helper.ResponseWrite(w, id, "Success delete shipping address")
+		helper.BuildResponseSuccess(w, nil, nil, "Success delete shipping address")
 	}
 }

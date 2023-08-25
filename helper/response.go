@@ -61,6 +61,8 @@ func BuildError(w http.ResponseWriter, err error) {
 		buildErrNotFound(w, ProductNotFoundError, "the ID provided is not found")
 	case isBadRequestError(err):
 		buildBadRequest(w, BadRequestError, err.Error())
+	case isUnauthorized(err):
+		buildErrUnauthorized(w, UnauthorizedError, err)
 	default:
 		buildErrInternalServer(w, InternalServerError, err)
 	}
@@ -89,6 +91,19 @@ func buildBadRequest(w http.ResponseWriter, code string, message string) {
 
 	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(http.StatusBadRequest)
+	w.Write(jsonData)
+}
+
+func buildErrUnauthorized(w http.ResponseWriter, code string, err error) {
+	var response = buildResponseError(err.Error(), code, nil)
+	jsonData, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(http.StatusUnauthorized)
 	w.Write(jsonData)
 }
 
@@ -123,11 +138,29 @@ func isBadRequestError(err error) bool {
 		a = true
 	case ErrAddProductTo:
 		a = true
+	case ErrWrongOldPassword:
+		a = true
 	default:
 		a = false
 	}
 
 	return a
+}
+
+func isUnauthorized(err error) bool {
+	var b bool
+	switch err {
+	case ErrAccDeny:
+		b = true
+	case ErrInvalidUser:
+		b = true
+	case ErrLoginAcc:
+		b = true
+	default:
+		b = false
+	}
+
+	return b
 }
 
 func ResponseWrite(w http.ResponseWriter, data interface{}, message string) {
