@@ -15,7 +15,7 @@ type cartRepository struct {
 type CartRepository interface {
 	GetCart(ctx context.Context) ([]entity.Cart, error)
 	GetCartById(ctx context.Context, id int) (entity.Cart, error)
-	GetCartId(ctx context.Context, productId, userId int) (entity.Cart, error)
+	GetCartProductId(ctx context.Context, productId, userId int) (entity.Cart, error)
 	CreateCart(ctx context.Context, cart *entity.Cart) error
 	UpdateCart(ctx context.Context, id int, cart *entity.Cart) error
 	DeleteCart(ctx context.Context, id int) error
@@ -42,7 +42,7 @@ func (c *cartRepository) GetCartById(ctx context.Context, id int) (entity.Cart, 
 }
 
 // get cart id by product id and user id
-func (c *cartRepository) GetCartId(ctx context.Context, productId, userId int) (entity.Cart, error) {
+func (c *cartRepository) GetCartProductId(ctx context.Context, productId, userId int) (entity.Cart, error) {
 	var result entity.Cart
 	err := c.DB.Where("product_id = ? and user_id = ?", productId, userId).First(&result).Error
 	return result, err
@@ -54,7 +54,6 @@ func (c *cartRepository) CreateCart(ctx context.Context, cart *entity.Cart) erro
 
 func (c *cartRepository) UpdateCart(ctx context.Context, id int, cart *entity.Cart) error {
 	return c.DB.Model(&entity.Cart{}).Where("id = ?", id).Update("qty", cart.Qty).Error
-	// return c.DB.Model(model).Where("id = ?", id).Updates(cart).Error
 }
 
 func (c *cartRepository) DeleteCart(ctx context.Context, id int) error {

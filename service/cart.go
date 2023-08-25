@@ -38,17 +38,17 @@ func (c *cartService) CreateCart(ctx context.Context, cart *entity.Cart) error {
 	userId := ctx.Value(middleware.GOSTORE_USERID).(int)
 	product, err := c.ProductRepo.GetProductById(ctx, cart.ProductId)
 	if err != nil {
-		return helper.ErrProductNotFound
+		return err
 	}
 
 	// check stock & valid product
 	if product.Stock < cart.Qty {
 		return helper.ErrStockNotEnough
 	} else if product.Store.UserId == userId {
-		return errors.New("cannot add your product's store to your cart")
+		return helper.ErrAddProductTo
 	}
 
-	checkCart, err := c.Repo.GetCartId(ctx, cart.ProductId, userId)
+	checkCart, err := c.Repo.GetCartProductId(ctx, cart.ProductId, userId)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			// create the cart if not productid on userid cart
