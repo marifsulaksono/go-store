@@ -20,7 +20,7 @@ type transactionRepository struct {
 type TransactionRepository interface {
 	GetTransactions(ctx context.Context) ([]entity.AllTransactionResponse, error)
 	GetTransactionById(ctx context.Context, id int) (entity.Transaction, error)
-	CreateTransaction(ctx context.Context, transaction *entity.Transaction) (entity.Transaction, error)
+	CreateTransaction(ctx context.Context, transaction *entity.Transaction) error
 	SoftDeleteTransaction(ctx context.Context, id int) error
 	RestoreDeletedTransaction(ctx context.Context, id int) error
 	DeleteTransaction(ctx context.Context, id int) error
@@ -49,7 +49,7 @@ func (tr *transactionRepository) GetTransactionById(ctx context.Context, id int)
 	return result, err
 }
 
-func (tr *transactionRepository) CreateTransaction(ctx context.Context, items *entity.Transaction) (entity.Transaction, error) {
+func (tr *transactionRepository) CreateTransaction(ctx context.Context, items *entity.Transaction) error {
 	var (
 		transaction entity.Transaction
 		total       int
@@ -68,14 +68,14 @@ func (tr *transactionRepository) CreateTransaction(ctx context.Context, items *e
 		if err != nil {
 			tx.Rollback()
 			productNotFound := fmt.Sprintf("Product %d not found!", trItem.ProductId)
-			return entity.Transaction{}, errors.New(productNotFound)
+			return errors.New(productNotFound)
 		} else if product.Store.UserId == userId {
 			tx.Rollback()
 			// can't add user's product to transaction
-			return entity.Transaction{}, helper.ErrAddProductTo
+			return helper.ErrAddProductTo
 		} else if product.Stock < trItem.Qty {
 			tx.Rollback()
-			return entity.Transaction{}, helper.ErrStockNotEnough
+			return helper.ErrStockNotEnough
 		}
 		fmt.Println("stock awal :", product.Stock)
 		product.Stock -= trItem.Qty
@@ -84,14 +84,13 @@ func (tr *transactionRepository) CreateTransaction(ctx context.Context, items *e
 		total += trItem.Subtotal
 		items.Items[i].Price = product.Price
 		items.Items[i].Subtotal = trItem.Subtotal
-		fmt.Println(product)
 
 		// update stock and sold product
 		err = tx.Model(&entity.Product{}).Select("stock", "sold").Where("id = ?",
 			trItem.ProductId).Updates(product).Error
 		if err != nil {
 			tx.Rollback()
-			return entity.Transaction{}, err
+			return err
 		}
 
 		fmt.Println("stock akhir :", product.Stock)
@@ -100,7 +99,7 @@ func (tr *transactionRepository) CreateTransaction(ctx context.Context, items *e
 			err := tx.Model(&entity.Product{}).Where("id = ?", trItem.ProductId).Update("status", "soldout").Error
 			if err != nil {
 				tx.Rollback()
-				return entity.Transaction{}, err
+				return err
 			}
 		}
 	}
@@ -113,14 +112,13 @@ func (tr *transactionRepository) CreateTransaction(ctx context.Context, items *e
 	transaction.UserId = userId
 	transaction.Items = items.Items
 
-	fmt.Println(transaction.Items)
 	err := tx.Create(&transaction).Error
 	if err != nil {
 		tx.Rollback()
-		return entity.Transaction{}, err
+		return err
 	}
 
-	return transaction, tx.Commit().Error
+	return tx.Commit().Error
 }
 
 func (tr *transactionRepository) SoftDeleteTransaction(ctx context.Context, id int) error {
