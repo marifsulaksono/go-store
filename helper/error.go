@@ -17,6 +17,7 @@ var (
 	ErrWrongOldPassword = errors.New("wrong old password")
 	ErrRecDeleted       = errors.New("record was deleted")
 	ErrRecRestored      = errors.New("record was restored")
+	ErrRequiredInput    = errors.New("some required input is missing")
 	ErrStockNotEnough   = errors.New("stock product isn't enough")
 	ErrUserExist        = errors.New("username already exist")
 	ErrInvalidUser      = errors.New("unauthorized, invalid user")

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"gostore/entity"
 	"gostore/helper"
 	"gostore/repo"
@@ -56,7 +57,7 @@ func (p *productService) GetAllProducts(ctx context.Context, keyword, status, or
 	// pagination formula
 	offset := (page - 1) * limit
 
-	result, err, count := p.Repo.GetAllProducts(ctx, keyword, status, order, sortBy, minPrice, maxPrice, categoryId, storeId, limit, offset)
+	result, count, err := p.Repo.GetAllProducts(ctx, keyword, status, order, sortBy, minPrice, maxPrice, categoryId, storeId, limit, offset)
 	if err != nil {
 		return []entity.Product{}, helper.Page{}, err
 	}
@@ -82,7 +83,50 @@ func (p *productService) GetProductbyId(ctx context.Context, id int) (entity.Pro
 }
 
 func (p *productService) InsertProduct(ctx context.Context, product *entity.Product) error {
-	product.Status = "sale"
+	var (
+		detailError = []helper.DetailError{}
+		status      = "sale"
+	)
+	if product.Name == "" {
+		detailError = append(detailError, helper.DetailError{
+			Field: "name",
+			Desc:  "required input is missing",
+		})
+	}
+
+	if product.Stock == nil {
+		detailError = append(detailError, helper.DetailError{
+			Field: "stock",
+			Desc:  "required input is missing",
+		})
+	}
+
+	if product.Price == nil {
+		detailError = append(detailError, helper.DetailError{
+			Field: "price",
+			Desc:  "required input is missing",
+			// Desc: "price must be higher than 0",
+		})
+	}
+
+	if product.CategoryId == nil {
+		detailError = append(detailError, helper.DetailError{
+			Field: "category_id",
+			Desc:  "required input is missing",
+		})
+	}
+
+	fmt.Println(detailError)
+	if len(detailError) > 0 {
+		return &helper.ValidationError{Details: detailError}
+		// return helper.ErrRequiredInput
+	}
+
+	if *product.Stock == 0 {
+		status = "soldout"
+	}
+
+	product.Status = status
 	return p.Repo.InsertProduct(ctx, product)
 }
 
@@ -92,9 +136,9 @@ func (p *productService) UpdateProduct(ctx context.Context, id int, product *ent
 		return err
 	}
 	// update status product to "sale" if stock more than 0 after updated
-	if product.Stock > 0 {
+	if *product.Stock > 0 {
 		product.Status = "sale"
-	} else if product.Stock == 0 {
+	} else if *product.Stock == 0 {
 		product.Status = "soldout"
 	}
 

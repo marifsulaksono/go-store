@@ -12,7 +12,7 @@ type productRepository struct {
 }
 
 type ProductRepository interface {
-	GetAllProducts(ctx context.Context, keyword, status, order, sortBy string, minPrice, maxPrice, categoryId, storeId, limit, offset int) ([]entity.Product, error, int64)
+	GetAllProducts(ctx context.Context, keyword, status, order, sortBy string, minPrice, maxPrice, categoryId, storeId, limit, offset int) ([]entity.Product, int64, error)
 	GetProductById(ctx context.Context, id int) (entity.Product, error)
 	GetDeletedProduct(ctx context.Context, id int) (entity.Product, error)
 	InsertProduct(ctx context.Context, product *entity.Product) error
@@ -30,7 +30,7 @@ func NewProductRepository(db *gorm.DB) ProductRepository {
 }
 
 func (p *productRepository) GetAllProducts(ctx context.Context, keyword, status, order, sortBy string,
-	minPrice, maxPrice, categoryId, storeId, limit, offset int) ([]entity.Product, error, int64) {
+	minPrice, maxPrice, categoryId, storeId, limit, offset int) ([]entity.Product, int64, error) {
 	var (
 		products []entity.Product
 		db       = p.DB
@@ -63,7 +63,7 @@ func (p *productRepository) GetAllProducts(ctx context.Context, keyword, status,
 
 	err := db.Order(sortBy +
 		" " + order).Limit(limit).Offset(offset).Preload("Category").Preload("Store").Find(&products).Count(&count).Error
-	return products, err, count
+	return products, count, err
 }
 
 func (p *productRepository) GetProductById(ctx context.Context, id int) (entity.Product, error) {

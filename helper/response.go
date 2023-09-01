@@ -24,6 +24,14 @@ type DetailError struct {
 	Desc  string `json:"desc,omitempty"`
 }
 
+type ValidationError struct {
+	Details []DetailError
+}
+
+func (v *ValidationError) Error() string {
+	return ErrRequiredInput.Error()
+}
+
 func buildResponseSuccess(data interface{}, metadata interface{}, message string) response {
 	var res response
 	res.Data = data
@@ -82,7 +90,12 @@ func buildErrNotFound(w http.ResponseWriter, code string, message string) {
 }
 
 func buildBadRequest(w http.ResponseWriter, code string, message string) {
-	var response = buildResponseError(message, code, nil)
+	var response response
+	if validationErr, ok := errors.New(message).(*ValidationError); ok {
+		response = buildResponseError(message, code, validationErr.Details)
+	} else {
+		response = buildResponseError(message, code, nil)
+	}
 	jsonData, err := json.Marshal(response)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -108,7 +121,13 @@ func buildErrUnauthorized(w http.ResponseWriter, code string, err error) {
 }
 
 func buildErrInternalServer(w http.ResponseWriter, code string, err error) {
-	var response = buildResponseError(err.Error(), code, nil)
+	var response response
+	if validationErr, ok := err.(*ValidationError); ok {
+		fmt.Println("build internal server error")
+		response = buildResponseError(err.Error(), code, validationErr.Details)
+	} else {
+		response = buildResponseError(err.Error(), code, nil)
+	}
 	jsonData, err := json.Marshal(response)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -129,6 +148,8 @@ func isBadRequestError(err error) bool {
 	case ErrRecRestored:
 		a = true
 	case ErrUserExist:
+		a = true
+	case ErrRequiredInput:
 		a = true
 	case ErrStockNotEnough:
 		a = true

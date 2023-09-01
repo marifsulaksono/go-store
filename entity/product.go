@@ -7,12 +7,12 @@ import (
 type Product struct {
 	Id         int            `json:"id"`
 	Name       string         `json:"name"`
-	Stock      int            `json:"stock"`
-	Price      int            `json:"price"`
+	Stock      *int           `json:"stock"`
+	Price      *int           `json:"price"`
 	Sold       int            `json:"sold"`
 	Desc       string         `json:"desc"`
 	Status     string         `json:"status"`
-	CategoryId int            `json:"category_id"`
+	CategoryId *int           `json:"category_id"`
 	Category   Category       `json:"category"`
 	StoreId    int            `json:"store_id"`
 	Store      StoreResponse  `json:"store"`
