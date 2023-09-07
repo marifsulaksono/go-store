@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"gostore/entity"
-	"gostore/helper"
+	transactionError "gostore/helper/domain/errorModel"
 	"gostore/middleware"
 	"time"
 
@@ -21,9 +21,6 @@ type TransactionRepository interface {
 	GetTransactions(ctx context.Context) ([]entity.AllTransactionResponse, error)
 	GetTransactionById(ctx context.Context, id int) (entity.Transaction, error)
 	CreateTransaction(ctx context.Context, transaction *entity.Transaction) error
-	SoftDeleteTransaction(ctx context.Context, id int) error
-	RestoreDeletedTransaction(ctx context.Context, id int) error
-	DeleteTransaction(ctx context.Context, id int) error
 }
 
 // return new transaction repository with property value
@@ -46,7 +43,14 @@ func (tr *transactionRepository) GetTransactions(ctx context.Context) ([]entity.
 func (tr *transactionRepository) GetTransactionById(ctx context.Context, id int) (entity.Transaction, error) {
 	var result entity.Transaction
 	err := tr.DB.Where("id = ?", id).Preload("Items.Product.Store").Preload("ShippingAddress").First(&result).Error
-	return result, err
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return entity.Transaction{}, transactionError.ErrTransactionNotFound
+		}
+		return entity.Transaction{}, err
+	}
+
+	return result, nil
 }
 
 func (tr *transactionRepository) CreateTransaction(ctx context.Context, items *entity.Transaction) error {
@@ -54,6 +58,7 @@ func (tr *transactionRepository) CreateTransaction(ctx context.Context, items *e
 		transaction entity.Transaction
 		total       int
 		userId      = ctx.Value(middleware.GOSTORE_USERID).(int)
+		detailError = make(map[string]any)
 	)
 
 	// begin the database transaction for ACID (atomicity, Consistency, Isolation, Durability)
@@ -61,42 +66,53 @@ func (tr *transactionRepository) CreateTransaction(ctx context.Context, items *e
 
 	// validation and update stock, sold, status selected product
 	for i, trItem := range items.Items {
+		if trItem.ProductId == nil {
+			detailError["product_id"] = "this field is missing input"
+		}
+
+		if trItem.Qty == nil {
+			detailError["qty"] = "this field is missing input"
+		}
+
+		if len(detailError) > 0 {
+			tx.Rollback()
+			return transactionError.ErrTransactionInput.AttachDetail(detailError)
+		}
+
 		// check product available
 		var product entity.Product
-		err := tx.Where("id = ?", trItem.ProductId).Preload("Store").First(&product).Error
-		fmt.Println("product Store UserId: ", product.Store.UserId)
+		err := tx.Where("id = ?", *trItem.ProductId).Preload("Store").First(&product).Error
 		if err != nil {
 			tx.Rollback()
-			productNotFound := fmt.Sprintf("Product %d not found!", trItem.ProductId)
-			return errors.New(productNotFound)
+			detailError["item"] = fmt.Sprintf("Product %d not found", *trItem.ProductId)
+			return transactionError.ErrProductNotFound.AttachDetail(detailError)
 		} else if product.Store.UserId == userId {
-			tx.Rollback()
 			// can't add user's product to transaction
-			return helper.ErrAddProductTo
-		} else if product.Stock < trItem.Qty {
 			tx.Rollback()
-			return helper.ErrStockNotEnough
+			return transactionError.ErrCantAddToTrx
+		} else if *product.Stock < *trItem.Qty {
+			tx.Rollback()
+			return transactionError.ErrStockProductNotEnough
 		}
-		fmt.Println("stock awal :", product.Stock)
-		product.Stock -= trItem.Qty
-		product.Sold += trItem.Qty
-		trItem.Subtotal = product.Price * trItem.Qty
+
+		*product.Stock -= *trItem.Qty
+		product.Sold += *trItem.Qty
+		trItem.Subtotal = *product.Price * *trItem.Qty
 		total += trItem.Subtotal
-		items.Items[i].Price = product.Price
+		items.Items[i].Price = *product.Price
 		items.Items[i].Subtotal = trItem.Subtotal
 
 		// update stock and sold product
 		err = tx.Model(&entity.Product{}).Select("stock", "sold").Where("id = ?",
-			trItem.ProductId).Updates(product).Error
+			*trItem.ProductId).Updates(product).Error
 		if err != nil {
 			tx.Rollback()
 			return err
 		}
 
-		fmt.Println("stock akhir :", product.Stock)
-		if product.Stock == 0 {
+		if *product.Stock == 0 {
 			// update status product when stock empty after transaction
-			err := tx.Model(&entity.Product{}).Where("id = ?", trItem.ProductId).Update("status", "soldout").Error
+			err := tx.Model(&entity.Product{}).Where("id = ?", *trItem.ProductId).Update("status", "soldout").Error
 			if err != nil {
 				tx.Rollback()
 				return err
@@ -119,16 +135,4 @@ func (tr *transactionRepository) CreateTransaction(ctx context.Context, items *e
 	}
 
 	return tx.Commit().Error
-}
-
-func (tr *transactionRepository) SoftDeleteTransaction(ctx context.Context, id int) error {
-	return tr.DB.Where("id = ?", id).Delete(&entity.Transaction{}).Error
-}
-
-func (tr *transactionRepository) RestoreDeletedTransaction(ctx context.Context, id int) error {
-	return tr.DB.Unscoped().Model(&entity.Transaction{}).Where("id = ?", id).Update("delete_at", gorm.DeletedAt{}).Error
-}
-
-func (tr *transactionRepository) DeleteTransaction(ctx context.Context, id int) error {
-	return tr.DB.Unscoped().Where("id = ?", id).Delete(&entity.Transaction{}).Error
 }

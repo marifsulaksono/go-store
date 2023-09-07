@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 	"gostore/entity"
-	"gostore/helper"
+	userError "gostore/helper/domain/errorModel"
 	"gostore/middleware"
 	"gostore/repo"
 	"strings"
@@ -22,10 +22,6 @@ type UserService interface {
 	UpdateUser(ctx context.Context, user *entity.User) error
 	ChangePasswordUser(ctx context.Context, userChange entity.UserChangePassword) error
 	DeleteUser(ctx context.Context) error
-	GetShippingAddressByUserId(ctx context.Context) ([]entity.ShippingAddress, error)
-	InsertShippingAddress(ctx context.Context, sa *entity.ShippingAddress) error
-	UpdateShippingAddress(ctx context.Context, id int, sa *entity.ShippingAddress) error
-	DeleteShippingAddress(ctx context.Context, id int) error
 }
 
 func NewUserService(r repo.UserRepository) UserService {
@@ -39,6 +35,36 @@ func (u *userService) GetUser(id int, username string) (entity.UserResponse, err
 }
 
 func (u *userService) CreateUser(user *entity.User) error {
+	var (
+		detailError = make(map[string]any)
+	)
+
+	if user.Name == "" {
+		detailError["name"] = "this field is missing input"
+	}
+
+	if user.Username == "" {
+		detailError["username"] = "this field is missing input"
+	}
+
+	if user.Password == "" {
+		detailError["password"] = "this field is missing input"
+	}
+
+	if user.Email == "" {
+		detailError["email"] = "this field is missing input"
+	}
+
+	if user.Phonenumber == nil {
+		detailError["phonenumber"] = "this field is missing input"
+	} else if *user.Phonenumber < 0 {
+		detailError["phonenumber"] = "this field must not negative"
+	}
+
+	if len(detailError) > 0 {
+		return userError.ErrUserInput.AttachDetail(detailError)
+	}
+
 	// generate password entry to be encrypt
 	hashPwd, _ := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	user.Password = string(hashPwd)
@@ -47,7 +73,7 @@ func (u *userService) CreateUser(user *entity.User) error {
 	err := u.Repo.CreateUser(user)
 	if err != nil {
 		if strings.Contains(err.Error(), "Error 1062") {
-			return helper.ErrUserExist
+			return userError.ErrExistUser
 		}
 		return err
 	}
@@ -55,11 +81,65 @@ func (u *userService) CreateUser(user *entity.User) error {
 }
 
 func (u *userService) UpdateUser(ctx context.Context, user *entity.User) error {
-	return u.Repo.UpdateUser(ctx, user)
+	var (
+		detailError = make(map[string]any)
+		id          = ctx.Value(middleware.GOSTORE_USERID).(int)
+	)
+
+	if user.Name == "" {
+		detailError["name"] = "this field is missing input"
+	}
+
+	if user.Username == "" {
+		detailError["username"] = "this field is missing input"
+	}
+
+	if user.Password == "" {
+		detailError["password"] = "this field is missing input"
+	}
+
+	if user.Email == "" {
+		detailError["email"] = "this field is missing input"
+	}
+
+	if user.Phonenumber == nil {
+		detailError["phonenumber"] = "this field is missing input"
+	} else if *user.Phonenumber < 0 {
+		detailError["phonenumber"] = "this field must not negative"
+	}
+
+	if len(detailError) > 0 {
+		return userError.ErrUserInput.AttachDetail(detailError)
+	}
+
+	checkUser, err := u.Repo.GetUser(id, "")
+	if err != nil {
+		return err
+	} else if checkUser.Id != id {
+		return userError.ErrInvalidUser
+	}
+
+	return u.Repo.UpdateUser(ctx, id, user)
 }
 
 func (u *userService) ChangePasswordUser(ctx context.Context, userChange entity.UserChangePassword) error {
-	userId := ctx.Value(middleware.GOSTORE_USERID).(int)
+	var (
+		detailError = make(map[string]any)
+		userId      = ctx.Value(middleware.GOSTORE_USERID).(int)
+	)
+
+	if userChange.OldPassword == "" {
+		detailError["old_password"] = "this field is missing input"
+	}
+
+	if userChange.NewPassword == "" {
+		detailError["new_password"] = "this field is missing input"
+	}
+
+	if len(detailError) > 0 {
+		return userError.ErrUserInput.AttachDetail(detailError)
+	}
+
 	checkUser, err := u.Repo.GetUser(userId, "")
 	if err != nil {
 		return err
@@ -67,7 +147,7 @@ func (u *userService) ChangePasswordUser(ctx context.Context, userChange entity.
 
 	// validation old password
 	if err := bcrypt.CompareHashAndPassword([]byte(checkUser.Password), []byte(userChange.OldPassword)); err != nil {
-		return helper.ErrWrongOldPassword
+		return userError.ErrWrongPassword
 	}
 
 	// generate hash of new password
@@ -82,47 +162,12 @@ func (u *userService) ChangePasswordUser(ctx context.Context, userChange entity.
 
 func (u *userService) DeleteUser(ctx context.Context) error {
 	id := ctx.Value(middleware.GOSTORE_USERID).(int)
-	_, err := u.Repo.GetUser(id, "")
+	checkUser, err := u.Repo.GetUser(id, "")
 	if err != nil {
 		return err
+	} else if checkUser.Id != id {
+		return userError.ErrInvalidUser
 	}
 
 	return u.Repo.DeleteUser(ctx)
-}
-
-func (u *userService) GetShippingAddressByUserId(ctx context.Context) ([]entity.ShippingAddress, error) {
-	return u.Repo.GetShippingAddressByUserId(ctx)
-}
-
-func (u *userService) InsertShippingAddress(ctx context.Context, sa *entity.ShippingAddress) error {
-	return u.Repo.InsertShippingAddress(ctx, sa)
-}
-
-func (u *userService) UpdateShippingAddress(ctx context.Context, id int, sa *entity.ShippingAddress) error {
-	userId := ctx.Value(middleware.GOSTORE_USERID).(int)
-	existSA, err := u.Repo.GetShippingAddressById(ctx, id)
-	if err != nil {
-		return err
-	}
-
-	// validation user updater is right user data
-	if existSA.UserId != userId {
-		return helper.ErrInvalidUser
-	}
-	err = u.Repo.UpdateShippingAddress(ctx, id, &existSA, sa)
-	return err
-}
-
-func (u *userService) DeleteShippingAddress(ctx context.Context, id int) error {
-	userId := ctx.Value(middleware.GOSTORE_USERID).(int)
-	existSA, err := u.Repo.GetShippingAddressById(ctx, id)
-	if err != nil {
-		return err
-	}
-
-	if existSA.UserId != userId {
-		return helper.ErrInvalidUser
-	}
-
-	return u.Repo.DeleteShippingAddress(ctx, id)
 }

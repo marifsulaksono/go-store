@@ -2,7 +2,9 @@ package repo
 
 import (
 	"context"
+	"errors"
 	"gostore/entity"
+	productError "gostore/helper/domain/errorModel"
 
 	"gorm.io/gorm"
 )
@@ -69,19 +71,37 @@ func (p *productRepository) GetAllProducts(ctx context.Context, keyword, status,
 func (p *productRepository) GetProductById(ctx context.Context, id int) (entity.Product, error) {
 	var product entity.Product
 	err := p.DB.Where("id = ?", id).Preload("Category").Preload("Store").First(&product).Error
-	return product, err
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return entity.Product{}, productError.ErrProductNotFound
+		}
+		return entity.Product{}, err
+	}
+	return product, nil
 }
 
 func (p *productRepository) GetDeletedProduct(ctx context.Context, id int) (entity.Product, error) {
 	var product entity.Product
 	err := p.DB.Unscoped().Where("id = ?", id).First(&product).Error
-	return product, err
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return entity.Product{}, productError.ErrProductNotFound
+		}
+		return entity.Product{}, err
+	}
+	return product, nil
 }
 
 func (p *productRepository) GetProductByStatus(ctx context.Context, s string) ([]entity.Product, error) {
 	var products []entity.Product
 	err := p.DB.Where("status = ?", s).Preload("Category").Find(&products).Error
-	return products, err
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, productError.ErrProductNotFound
+		}
+		return nil, err
+	}
+	return products, nil
 }
 
 func (p *productRepository) InsertProduct(ctx context.Context, product *entity.Product) error {

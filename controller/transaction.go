@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"gostore/entity"
 	"gostore/helper"
+	"gostore/helper/response"
 	"gostore/service"
 	"net/http"
 )
@@ -19,32 +20,39 @@ func NewTransactionController(s service.TransactionService) *TransactionControll
 }
 
 func (tr *TransactionController) GetTransactions(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	var (
+		ctx     = r.Context()
+		message string
+	)
+
 	result, err := tr.Service.GetTransactions(ctx)
 	if err != nil {
-		helper.BuildError(w, err)
+		response.BuildErorResponse(w, err)
 		return
 	}
 
 	if result == nil || len(result) < 1 {
-		helper.BuildResponseSuccess(w, result, nil, "No results found")
-		return
+		message = "No results found"
 	}
 
-	helper.BuildResponseSuccess(w, result, nil, "")
+	response.BuildSuccesResponse(w, result, nil, message)
 }
 
 func (tr *TransactionController) GetTransactionById(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	if id, s := helper.IdVarsMux(w, r); s {
-		result, err := tr.Service.GetTransactionById(ctx, id)
-		if err != nil {
-			helper.BuildError(w, err)
-			return
-		}
-
-		helper.BuildResponseSuccess(w, result, nil, "")
+	id, err := helper.ParamIdChecker(w, r)
+	if err != nil {
+		response.BuildErorResponse(w, err)
+		return
 	}
+
+	result, err := tr.Service.GetTransactionById(ctx, id)
+	if err != nil {
+		response.BuildErorResponse(w, err)
+		return
+	}
+
+	response.BuildSuccesResponse(w, result, nil, "")
 }
 
 func (tr *TransactionController) CreateTransaction(w http.ResponseWriter, r *http.Request) {
@@ -52,16 +60,16 @@ func (tr *TransactionController) CreateTransaction(w http.ResponseWriter, r *htt
 	var transaction entity.Transaction
 	err := json.NewDecoder(r.Body).Decode(&transaction)
 	if err != nil {
-		helper.BuildError(w, err)
+		response.BuildErorResponse(w, err)
 		return
 	}
 	defer r.Body.Close()
 
 	err = tr.Service.CreateTransaction(ctx, &transaction)
 	if err != nil {
-		helper.BuildError(w, err)
+		response.BuildErorResponse(w, err)
 		return
 	}
 
-	helper.BuildResponseSuccess(w, nil, nil, "Success create new transaction")
+	response.BuildSuccesResponse(w, nil, nil, "Success create new transaction")
 }

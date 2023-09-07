@@ -2,7 +2,9 @@ package repo
 
 import (
 	"context"
+	"errors"
 	"gostore/entity"
+	cartError "gostore/helper/domain/errorModel"
 	"gostore/middleware"
 
 	"gorm.io/gorm"
@@ -38,7 +40,13 @@ func (c *cartRepository) GetCartById(ctx context.Context, id int) (entity.Cart, 
 	userId := ctx.Value(middleware.GOSTORE_USERID)
 	var result entity.Cart
 	err := c.DB.Where("id = ? and user_id = ?", id, userId).First(&result).Error
-	return result, err
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return entity.Cart{}, cartError.ErrCartNotFound
+		}
+		return entity.Cart{}, err
+	}
+	return result, nil
 }
 
 // get cart id by product id and user id
@@ -53,7 +61,7 @@ func (c *cartRepository) CreateCart(ctx context.Context, cart *entity.Cart) erro
 }
 
 func (c *cartRepository) UpdateCart(ctx context.Context, id int, cart *entity.Cart) error {
-	return c.DB.Model(&entity.Cart{}).Where("id = ?", id).Update("qty", cart.Qty).Error
+	return c.DB.Model(&entity.Cart{}).Where("id = ?", id).Update("qty", *cart.Qty).Error
 }
 
 func (c *cartRepository) DeleteCart(ctx context.Context, id int) error {

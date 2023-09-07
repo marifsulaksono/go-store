@@ -11,7 +11,7 @@ type Transaction struct {
 	Date              time.Time         `json:"date"`
 	Total             int               `json:"total"`
 	Status            string            `json:"status"`
-	ShippingAddressId int               `json:"shipping_address_id"`
+	ShippingAddressId *int              `json:"shipping_address_id"`
 	ShippingAddress   ShippingAddress   `json:"shipping_address"`
 	UserId            int               `json:"-"`
 	Items             []TransactionItem `json:"items" gorm:"foreignKey:TransactionId;references:Id"`
@@ -21,9 +21,9 @@ type Transaction struct {
 type TransactionItem struct {
 	Id            int                        `json:"id"`
 	TransactionId int                        `json:"-"`
-	ProductId     int                        `json:"product_id"`
+	ProductId     *int                       `json:"product_id"`
 	Product       ProductTransactionResponse `gorm:"foreignKey:ProductId" json:"items"`
-	Qty           int                        `json:"qty"`
+	Qty           *int                       `json:"qty"`
 	Price         int                        `json:"price"`
 	Subtotal      int                        `json:"subtotal"`
 }
@@ -55,13 +55,13 @@ func (AllTransactionItemResponse) TableName() string {
 
 // {
 //     "shipping_address_id": 1,
-//     "transaction_items": [
+//     "items": [
 //         {
-//             "item_id": 1,
+//             "product_id": 1,
 //             "qty": 4
 //         },
 //         {
-//             "item_id": 19,
+//             "product_id": 19,
 //             "qty": 4
 //         }
 //     ]

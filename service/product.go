@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"gostore/entity"
 	"gostore/helper"
+	productError "gostore/helper/domain/errorModel"
 	"gostore/repo"
 )
 
@@ -84,42 +85,33 @@ func (p *productService) GetProductbyId(ctx context.Context, id int) (entity.Pro
 
 func (p *productService) InsertProduct(ctx context.Context, product *entity.Product) error {
 	var (
-		detailError = []helper.DetailError{}
+		detailError = make(map[string]any)
 		status      = "sale"
 	)
+
 	if product.Name == "" {
-		detailError = append(detailError, helper.DetailError{
-			Field: "name",
-			Desc:  "required input is missing",
-		})
+		detailError["name"] = "this field is missing input"
 	}
 
 	if product.Stock == nil {
-		detailError = append(detailError, helper.DetailError{
-			Field: "stock",
-			Desc:  "required input is missing",
-		})
+		detailError["stock"] = "this field is missing input"
+	} else if *product.Stock < 0 {
+		detailError["stock"] = "this field must not negative"
 	}
 
 	if product.Price == nil {
-		detailError = append(detailError, helper.DetailError{
-			Field: "price",
-			Desc:  "required input is missing",
-			// Desc: "price must be higher than 0",
-		})
+		detailError["price"] = "this field is missing input"
+	} else if *product.Price < 1 {
+		detailError["price"] = "this field must be higher than 0"
 	}
 
 	if product.CategoryId == nil {
-		detailError = append(detailError, helper.DetailError{
-			Field: "category_id",
-			Desc:  "required input is missing",
-		})
+		detailError["category_id"] = "this field is missing input"
 	}
 
 	fmt.Println(detailError)
 	if len(detailError) > 0 {
-		return &helper.ValidationError{Details: detailError}
-		// return helper.ErrRequiredInput
+		return productError.ErrProductInput.AttachDetail(detailError)
 	}
 
 	if *product.Stock == 0 {
@@ -131,10 +123,40 @@ func (p *productService) InsertProduct(ctx context.Context, product *entity.Prod
 }
 
 func (p *productService) UpdateProduct(ctx context.Context, id int, product *entity.Product) error {
+	var (
+		detailError = make(map[string]any)
+	)
+
 	_, err := p.Repo.GetProductById(ctx, id)
 	if err != nil {
 		return err
 	}
+
+	if product.Name == "" {
+		detailError["name"] = "this field is missng input"
+	}
+
+	if product.Stock == nil {
+		detailError["stock"] = "this field is missng input"
+	} else if *product.Stock < 0 {
+		detailError["stock"] = "this field must not negative"
+	}
+
+	if product.Price == nil {
+		detailError["price"] = "this field is missng input"
+	} else if *product.Price < 1 {
+		detailError["price"] = "this field must be higher than 0"
+	}
+
+	if product.CategoryId == nil {
+		detailError["price"] = "this field is missng input"
+	}
+
+	fmt.Println(detailError)
+	if len(detailError) > 0 {
+		return productError.ErrProductInput.AttachDetail(detailError)
+	}
+
 	// update status product to "sale" if stock more than 0 after updated
 	if *product.Stock > 0 {
 		product.Status = "sale"
@@ -148,7 +170,7 @@ func (p *productService) UpdateProduct(ctx context.Context, id int, product *ent
 func (p *productService) SoftDeleteProduct(ctx context.Context, id int) error {
 	_, err := p.Repo.GetProductById(ctx, id)
 	if err != nil {
-		return helper.ErrRecDeleted
+		return productError.ErrProductDeleted
 	}
 
 	return p.Repo.SoftDeleteProduct(ctx, id)
@@ -159,7 +181,7 @@ func (p *productService) RestoreDeletedProduct(ctx context.Context, id int) erro
 	if err != nil {
 		return err
 	} else if !productCheck.DeleteAt.Valid {
-		return helper.ErrRecRestored
+		return productError.ErrProductRestored
 	}
 
 	return p.Repo.RestoreDeletedProduct(ctx, id)

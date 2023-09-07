@@ -3,9 +3,9 @@ package entity
 type Cart struct {
 	Id        int                        `json:"id"`
 	UserId    int                        `json:"-"`
-	ProductId int                        `json:"product_id"`
+	ProductId *int                       `json:"product_id"`
 	Product   ProductTransactionResponse `json:"product"`
-	Qty       int                        `json:"qty"`
+	Qty       *int                       `json:"qty"`
 }
 
 /*
@@ -17,7 +17,7 @@ Body Request:
 	"qty": 10
 }
 
-"PATCH":
+"PUT":
 {
 	"qty": 20
 }

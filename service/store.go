@@ -4,7 +4,7 @@ import (
 	"context"
 	_ "errors"
 	"gostore/entity"
-	"gostore/helper"
+	storeError "gostore/helper/domain/errorModel"
 	"gostore/middleware"
 	"gostore/repo"
 	"strings"
@@ -44,14 +44,34 @@ func (s *storeService) GetStoreById(ctx context.Context, id int) (entity.StoreRe
 }
 
 func (s *storeService) CreateStore(ctx context.Context, store *entity.Store) error {
-	userId := ctx.Value(middleware.GOSTORE_USERID).(int)
+	var (
+		detailError = make(map[string]any)
+		userId      = ctx.Value(middleware.GOSTORE_USERID).(int)
+	)
+
+	if store.NameStore == "" {
+		detailError["name_store"] = "this field is missing input"
+	}
+
+	if store.Address == "" {
+		detailError["address"] = "this field is missing input"
+	}
+
+	if store.Email == "" {
+		detailError["email"] = "this field is missing input"
+	}
+
+	if len(detailError) > 0 {
+		return storeError.ErrStoreInput.AttachDetail(detailError)
+	}
+
 	store.Status = "active"
 	store.UserId = userId
 	store.CreateAt = time.Now()
 	err := s.Repo.CreateStore(ctx, store)
 	if err != nil {
 		if strings.Contains(err.Error(), "Error 1062") {
-			return helper.ErrDuplicateStore
+			return storeError.ErrDuplicateStore
 		}
 		return err
 	}
@@ -59,10 +79,34 @@ func (s *storeService) CreateStore(ctx context.Context, store *entity.Store) err
 }
 
 func (s *storeService) UpdateStore(ctx context.Context, id int, store *entity.Store) error {
-	userId := ctx.Value(middleware.GOSTORE_USERID).(int)
+	var (
+		detailError = make(map[string]any)
+		userId      = ctx.Value(middleware.GOSTORE_USERID).(int)
+	)
+
+	if store.NameStore == "" {
+		detailError["name_store"] = "this field is missing input"
+	}
+
+	if store.Address == "" {
+		detailError["address"] = "this field is missing input"
+	}
+
+	if store.Email == "" {
+		detailError["email"] = "this field is missing input"
+	}
+
+	if store.Status == "" {
+		detailError["status"] = "this field is missing input"
+	}
+
+	if len(detailError) > 0 {
+		return storeError.ErrStoreInput.AttachDetail(detailError)
+	}
+
 	checkStore, err := s.Repo.CheckStoreById(ctx, id)
 	if checkStore.UserId != userId {
-		return helper.ErrInvalidUser
+		return storeError.ErrInvalidUserStore
 	} else if err != nil {
 		return err
 	}
@@ -74,7 +118,7 @@ func (s *storeService) SoftDeleteStore(ctx context.Context, id int) error {
 	userId := ctx.Value(middleware.GOSTORE_USERID).(int)
 	checkStore, err := s.Repo.CheckStoreById(ctx, id)
 	if checkStore.UserId != userId {
-		return helper.ErrInvalidUser
+		return storeError.ErrInvalidUserStore
 	} else if err != nil {
 		return err
 	}
@@ -87,7 +131,7 @@ func (s *storeService) RestoreDeletedStore(ctx context.Context, id int) error {
 	if err != nil {
 		return err
 	} else if !checkStore.DeleteAt.Valid {
-		return helper.ErrRecRestored
+		return storeError.ErrStoreRestored
 	}
 
 	return s.Repo.RestoreDeletedStore(ctx, id)

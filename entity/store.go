@@ -43,3 +43,10 @@ func (StoreResponseById) TableName() string {
 func (StoreResponse) TableName() string {
 	return "stores"
 }
+
+// {
+// 	"name_store": "Arif Cell",
+// 	"address": "Kraksaan, Kabupaten Probolinggo",
+// 	"email": "arif.cell@gmail.com",
+// 	"desc": "Kami menyediakan berbagai macam kartu perdana"
+// }

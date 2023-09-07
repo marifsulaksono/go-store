@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"gostore/entity"
 	"gostore/helper"
+	"gostore/helper/response"
 	"gostore/service"
 	"net/http"
 )
@@ -20,108 +21,144 @@ func NewStoreController(s service.StoreService) *StoreController {
 }
 
 func (s *StoreController) GetAllStore(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	var (
+		ctx     = r.Context()
+		message string
+	)
+
 	result, err := s.Service.GetAllStore(ctx)
 	if err != nil {
-		helper.BuildError(w, err)
+		response.BuildErorResponse(w, err)
 		return
 	}
 
 	if result == nil || len(result) < 1 {
-		helper.BuildResponseSuccess(w, result, nil, "No results found")
-		return
+		message = "No results found"
 	}
 
-	helper.BuildResponseSuccess(w, result, nil, "")
+	response.BuildSuccesResponse(w, result, nil, message)
 }
 
 func (s *StoreController) GetStoreById(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	if id, t := helper.IdVarsMux(w, r); t {
-		result, err := s.Service.GetStoreById(ctx, id)
-		if err != nil {
-			helper.BuildError(w, err)
-			return
-		}
+	var (
+		ctx = r.Context()
+	)
 
-		helper.BuildResponseSuccess(w, result, nil, "")
+	id, err := helper.ParamIdChecker(w, r)
+	if err != nil {
+		response.BuildErorResponse(w, err)
+		return
 	}
+
+	result, err := s.Service.GetStoreById(ctx, id)
+	if err != nil {
+		response.BuildErorResponse(w, err)
+		return
+	}
+
+	response.BuildSuccesResponse(w, result, nil, "")
 }
 
 func (s *StoreController) CreateStore(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	var store entity.Store
+	var (
+		ctx   = r.Context()
+		store entity.Store
+	)
+
 	if err := json.NewDecoder(r.Body).Decode(&store); err != nil {
-		helper.BuildError(w, err)
+		response.BuildErorResponse(w, err)
 		return
 	}
 	defer r.Body.Close()
 
-	err := s.Service.CreateStore(ctx, &store)
-	if err != nil {
-		helper.BuildError(w, err)
+	if err := s.Service.CreateStore(ctx, &store); err != nil {
+		response.BuildErorResponse(w, err)
 		return
 	}
 
-	helper.BuildResponseSuccess(w, nil, nil, "Success create new store")
+	response.BuildSuccesResponse(w, nil, nil, "Success create new store")
 }
 
 func (s *StoreController) UpdateStore(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	if id, t := helper.IdVarsMux(w, r); t {
-		var store entity.Store
-		if err := json.NewDecoder(r.Body).Decode(&store); err != nil {
-			helper.BuildError(w, err)
-			return
-		}
+	var (
+		ctx   = r.Context()
+		store entity.Store
+	)
 
-		err := s.Service.UpdateStore(ctx, id, &store)
-		if err != nil {
-			helper.BuildError(w, err)
-			return
-		}
-
-		helper.BuildResponseSuccess(w, nil, nil, "Success update store")
+	id, err := helper.ParamIdChecker(w, r)
+	if err != nil {
+		response.BuildErorResponse(w, err)
+		return
 	}
+
+	if err := json.NewDecoder(r.Body).Decode(&store); err != nil {
+		response.BuildErorResponse(w, err)
+		return
+	}
+
+	if err := s.Service.UpdateStore(ctx, id, &store); err != nil {
+		response.BuildErorResponse(w, err)
+		return
+	}
+
+	response.BuildSuccesResponse(w, nil, nil, "Success update store")
 }
 
 func (s *StoreController) SoftDeleteStore(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	if id, t := helper.IdVarsMux(w, r); t {
-		err := s.Service.SoftDeleteStore(ctx, id)
-		if err != nil {
-			helper.BuildError(w, err)
-			return
-		}
+	var (
+		ctx = r.Context()
+	)
 
-		helper.BuildResponseSuccess(w, nil, nil, "Success delete store")
+	id, err := helper.ParamIdChecker(w, r)
+	if err != nil {
+		response.BuildErorResponse(w, err)
+		return
 	}
+
+	if err := s.Service.SoftDeleteStore(ctx, id); err != nil {
+		response.BuildErorResponse(w, err)
+		return
+	}
+
+	response.BuildSuccesResponse(w, nil, nil, "Success delete store")
 }
 
 func (s *StoreController) RestoreDeletedStore(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	if id, t := helper.IdVarsMux(w, r); t {
-		err := s.Service.RestoreDeletedStore(ctx, id)
-		if err != nil {
-			helper.BuildError(w, err)
-			return
-		}
+	var (
+		ctx = r.Context()
+	)
 
-		message := fmt.Sprintf("Success restore store %d", id)
-		helper.BuildResponseSuccess(w, nil, nil, message)
+	id, err := helper.ParamIdChecker(w, r)
+	if err != nil {
+		response.BuildErorResponse(w, err)
+		return
 	}
+
+	if err := s.Service.RestoreDeletedStore(ctx, id); err != nil {
+		response.BuildErorResponse(w, err)
+		return
+	}
+
+	message := fmt.Sprintf("Success restore store %d", id)
+	response.BuildSuccesResponse(w, nil, nil, message)
 }
 
 func (s *StoreController) DeleteStore(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	if id, t := helper.IdVarsMux(w, r); t {
-		err := s.Service.DeleteStore(ctx, id)
-		if err != nil {
-			helper.BuildError(w, err)
-			return
-		}
+	var (
+		ctx = r.Context()
+	)
 
-		message := fmt.Sprintf("Success permanently delete store %d", id)
-		helper.BuildResponseSuccess(w, nil, nil, message)
+	id, err := helper.ParamIdChecker(w, r)
+	if err != nil {
+		response.BuildErorResponse(w, err)
+		return
 	}
+
+	if err := s.Service.DeleteStore(ctx, id); err != nil {
+		response.BuildErorResponse(w, err)
+		return
+	}
+
+	message := fmt.Sprintf("Success permanently delete store %d", id)
+	response.BuildSuccesResponse(w, nil, nil, message)
 }

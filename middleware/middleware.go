@@ -3,6 +3,8 @@ package middleware
 import (
 	"context"
 	"fmt"
+	middleError "gostore/helper/domain/errorModel"
+	"gostore/helper/response"
 	"net/http"
 	"strings"
 
@@ -40,7 +42,7 @@ func JWTMiddleware(next http.HandlerFunc) http.HandlerFunc {
 
 		authHeader := r.Header.Get("Authorization")
 		if !strings.Contains(authHeader, "Bearer") {
-			http.Error(w, "Invalid token", http.StatusUnauthorized)
+			response.BuildErorResponse(w, middleError.ErrInvalidToken)
 			return
 		}
 
@@ -61,25 +63,25 @@ func JWTMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			v, _ := err.(*jwt.ValidationError)
 			switch v.Errors {
 			case jwt.ValidationErrorExpired:
-				http.Error(w, "Unauthorized, token expired!", http.StatusUnauthorized)
+				response.BuildErorResponse(w, middleError.ErrExpToken)
 				return
 			case jwt.ValidationErrorSignatureInvalid:
-				http.Error(w, "Unauthorized!", http.StatusUnauthorized)
+				response.BuildErorResponse(w, middleError.ErrUnauthorized)
 				return
 			default:
-				http.Error(w, "Unauthorized!", http.StatusUnauthorized)
+				response.BuildErorResponse(w, middleError.ErrUnauthorized)
 				return
 			}
 		}
 
 		if !token.Valid {
-			http.Error(w, "Unauthorized!", http.StatusUnauthorized)
+			response.BuildErorResponse(w, middleError.ErrInvalidToken)
 			return
 		}
 
 		payload, ok := token.Claims.(*JWTClaim)
 		if !ok {
-			http.Error(w, "Unauthorized!", http.StatusUnauthorized)
+			response.BuildErorResponse(w, middleError.ErrInvalidToken)
 			return
 		}
 

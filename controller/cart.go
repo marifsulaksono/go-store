@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"gostore/entity"
 	"gostore/helper"
+	"gostore/helper/response"
 	"gostore/service"
 	"net/http"
 )
@@ -19,69 +20,87 @@ func NewCartController(s service.CartService) *CartController {
 }
 
 func (c *CartController) GetCartByUserId(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	var (
+		ctx     = r.Context()
+		message string
+	)
+
 	result, err := c.Service.GetCart(ctx)
 	if err != nil {
-		helper.BuildError(w, err)
+		response.BuildErorResponse(w, err)
 		return
 	}
 
 	if result == nil || len(result) < 1 {
-		helper.BuildResponseSuccess(w, result, nil, "No results found")
-		return
+		message = "No results found"
 	}
 
-	helper.BuildResponseSuccess(w, result, nil, "")
+	response.BuildSuccesResponse(w, result, nil, message)
 }
 
 func (c *CartController) CreateCart(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	var cart entity.Cart
+	var (
+		ctx  = r.Context()
+		cart entity.Cart
+	)
+
 	err := json.NewDecoder(r.Body).Decode(&cart)
 	if err != nil {
-		helper.BuildError(w, err)
+		response.BuildErorResponse(w, err)
 		return
 	}
 	defer r.Body.Close()
 
 	err = c.Service.CreateCart(ctx, &cart)
 	if err != nil {
-		helper.BuildError(w, err)
+		response.BuildErorResponse(w, err)
 		return
 	}
 
-	helper.BuildResponseSuccess(w, nil, nil, "Success add new cart")
+	response.BuildSuccesResponse(w, nil, nil, "Success add new cart")
 }
 
 func (c *CartController) UpdateCart(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	if id, s := helper.IdVarsMux(w, r); s {
-		var cart entity.Cart
-		err := json.NewDecoder(r.Body).Decode(&cart)
-		if err != nil {
-			helper.BuildError(w, err)
-			return
-		}
+	var (
+		ctx  = r.Context()
+		cart entity.Cart
+	)
 
-		err = c.Service.UpdateCart(ctx, id, &cart)
-		if err != nil {
-			helper.BuildError(w, err)
-			return
-		}
-
-		helper.BuildResponseSuccess(w, nil, nil, "Success update cart")
+	id, err := helper.ParamIdChecker(w, r)
+	if err != nil {
+		response.BuildErorResponse(w, err)
+		return
 	}
+
+	if err := json.NewDecoder(r.Body).Decode(&cart); err != nil {
+		response.BuildErorResponse(w, err)
+		return
+	}
+
+	err = c.Service.UpdateCart(ctx, id, &cart)
+	if err != nil {
+		response.BuildErorResponse(w, err)
+		return
+	}
+
+	response.BuildSuccesResponse(w, nil, nil, "Success update cart")
 }
 
 func (c *CartController) DeleteCart(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	if id, s := helper.IdVarsMux(w, r); s {
-		err := c.Service.DeleteCart(ctx, id)
-		if err != nil {
-			helper.BuildError(w, err)
-			return
-		}
+	var (
+		ctx = r.Context()
+	)
 
-		helper.BuildResponseSuccess(w, nil, nil, "Success delete cart")
+	id, err := helper.ParamIdChecker(w, r)
+	if err != nil {
+		response.BuildErorResponse(w, err)
+		return
 	}
+
+	if err := c.Service.DeleteCart(ctx, id); err != nil {
+		response.BuildErorResponse(w, err)
+		return
+	}
+
+	response.BuildSuccesResponse(w, nil, nil, "Success delete cart")
 }

@@ -3,15 +3,14 @@ package service
 import (
 	"context"
 	"gostore/entity"
-	"gostore/helper"
+	transactionError "gostore/helper/domain/errorModel"
 	"gostore/middleware"
 	"gostore/repo"
 )
 
 type transactionService struct {
-	Repo        repo.TransactionRepository
-	ProductRepo repo.ProductRepository
-	UserRepo    repo.UserRepository
+	Repo   repo.TransactionRepository
+	SARepo repo.ShippingAddressRepo
 }
 
 type TransactionService interface {
@@ -20,11 +19,10 @@ type TransactionService interface {
 	CreateTransaction(ctx context.Context, items *entity.Transaction) error
 }
 
-func NewTransactionService(r repo.TransactionRepository, p repo.ProductRepository, u repo.UserRepository) TransactionService {
+func NewTransactionService(r repo.TransactionRepository, sa repo.ShippingAddressRepo) TransactionService {
 	return &transactionService{
-		Repo:        r,
-		ProductRepo: p,
-		UserRepo:    u,
+		Repo:   r,
+		SARepo: sa,
 	}
 }
 
@@ -37,9 +35,14 @@ func (tr *transactionService) GetTransactionById(ctx context.Context, id int) (e
 }
 
 func (tr *transactionService) CreateTransaction(ctx context.Context, items *entity.Transaction) error {
-	checkSA, err := tr.UserRepo.GetShippingAddressById(ctx, items.ShippingAddressId)
+	if items.ShippingAddressId == nil {
+		detailError := map[string]any{"shipping_address_id": "this field is missing input"}
+		return transactionError.ErrTransactionInput.AttachDetail(detailError)
+	}
+
+	checkSA, err := tr.SARepo.GetShippingAddressById(ctx, *items.ShippingAddressId)
 	if checkSA.UserId != ctx.Value(middleware.GOSTORE_USERID).(int) {
-		return helper.ErrInvalidSA
+		return transactionError.ErrInvalidSA
 	} else if err != nil {
 		return err
 	}

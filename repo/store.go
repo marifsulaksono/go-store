@@ -2,7 +2,9 @@ package repo
 
 import (
 	"context"
+	"errors"
 	"gostore/entity"
+	storeError "gostore/helper/domain/errorModel"
 
 	"gorm.io/gorm"
 )
@@ -38,13 +40,25 @@ func (s *storeRepository) GetAllStore(ctx context.Context) ([]entity.Store, erro
 func (s *storeRepository) GetStoreById(ctx context.Context, id int) (entity.StoreResponseById, error) {
 	var result entity.StoreResponseById
 	err := s.DB.Where("id = ?", id).Preload("Product.Category").First(&result).Error
-	return result, err
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return entity.StoreResponseById{}, storeError.ErrStoreNotFound
+		}
+		return entity.StoreResponseById{}, err
+	}
+	return result, nil
 }
 
 func (s *storeRepository) CheckStoreById(ctx context.Context, id int) (entity.Store, error) {
 	var result entity.Store
 	err := s.DB.Where("id = ?", id).First(&result).Error
-	return result, err
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return entity.Store{}, storeError.ErrStoreNotFound
+		}
+		return entity.Store{}, err
+	}
+	return result, nil
 }
 
 func (s *storeRepository) GetDeletedStore(ctx context.Context, id int) (entity.Store, error) {

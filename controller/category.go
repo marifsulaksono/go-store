@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"gostore/helper"
+	"gostore/helper/response"
 	"gostore/service"
 
 	"net/http"
@@ -29,5 +29,5 @@ func (c *CategoryController) GetAllCategories(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	helper.ResponseWrite(w, result, "Success get all categories!")
+	response.BuildSuccesResponse(w, result, nil, "Success get all categories!")
 }

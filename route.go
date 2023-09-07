@@ -14,6 +14,7 @@ import (
 func routeInit(conn *gorm.DB) *mux.Router {
 	// ============== Dependency Injection ============
 	userRepo := repo.NewUserRepository(conn)
+	saRepo := repo.NewShippingAddressRepo(conn)
 	categoryRepo := repo.NewCategoryRepository(conn)
 	storeRepo := repo.NewStoreRepository(conn)
 	productRepo := repo.NewProductRepository(conn)
@@ -21,13 +22,15 @@ func routeInit(conn *gorm.DB) *mux.Router {
 	trRepo := repo.NewTransactionRepository(conn)
 
 	userService := service.NewUserService(userRepo)
+	saService := service.NewShippingAddressService(saRepo)
 	categoryService := service.NewCategoryService(*categoryRepo)
 	storeService := service.NewStoreService(storeRepo, productRepo)
 	productService := service.NewProductService(productRepo)
 	cartService := service.NewCartService(cartRepo, productRepo)
-	trService := service.NewTransactionService(trRepo, productRepo, userRepo)
+	trService := service.NewTransactionService(trRepo, saRepo)
 
 	userController := controller.NewUserController(userService)
+	saController := controller.NewShippingAddressController(saService)
 	categoryController := controller.NewCategoryController(*categoryService)
 	storeContoller := controller.NewStoreController(storeService)
 	productController := controller.NewProductController(productService)
@@ -43,11 +46,11 @@ func routeInit(conn *gorm.DB) *mux.Router {
 	r.HandleFunc("/login", userController.Login).Methods(http.MethodPost)
 	r.HandleFunc("/user/profile", middleware.JWTMiddleware(userController.UpdateUser)).Methods(http.MethodPut)
 	r.HandleFunc("/user/password", middleware.JWTMiddleware(userController.ChangePasswordUser)).Methods(http.MethodPatch)
-	r.HandleFunc("/user/address", middleware.JWTMiddleware(userController.GetShippingAddressByUserId)).Methods(http.MethodGet)
-	r.HandleFunc("/user/address", middleware.JWTMiddleware(userController.InsertShippingAddress)).Methods(http.MethodPost)
-	r.HandleFunc("/user/address/{id}", middleware.JWTMiddleware(userController.UpdateShippingAddress)).Methods(http.MethodPut)
-	r.HandleFunc("/user/address/{id}", middleware.JWTMiddleware(userController.DeleteShippingAddress)).Methods(http.MethodDelete)
 	r.HandleFunc("/user", middleware.JWTMiddleware(userController.DeleteUser)).Methods(http.MethodDelete)
+	r.HandleFunc("/user/address", middleware.JWTMiddleware(saController.GetShippingAddressByUserId)).Methods(http.MethodGet)
+	r.HandleFunc("/user/address", middleware.JWTMiddleware(saController.InsertShippingAddress)).Methods(http.MethodPost)
+	r.HandleFunc("/user/address/{id}", middleware.JWTMiddleware(saController.UpdateShippingAddress)).Methods(http.MethodPut)
+	r.HandleFunc("/user/address/{id}", middleware.JWTMiddleware(saController.DeleteShippingAddress)).Methods(http.MethodDelete)
 
 	// ==================== Router Store ====================
 	r.HandleFunc("/stores", storeContoller.GetAllStore).Methods(http.MethodGet)

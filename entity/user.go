@@ -12,7 +12,7 @@ type User struct {
 	Username    string         `json:"username"`
 	Password    string         `json:"password"`
 	Email       string         `json:"email"`
-	Phonenumber int            `json:"phonenumber"`
+	Phonenumber *int           `json:"phonenumber"`
 	Role        string         `json:"role"`
 	CreateAt    time.Time      `json:"create_at"`
 	UpdateAt    time.Time      `json:"update_at"`
@@ -45,3 +45,11 @@ type ShippingAddress struct {
 func (UserResponse) TableName() string {
 	return "users"
 }
+
+// {
+// 	"name": "Muhammad Arif Sulaksono",
+// 	"username": "arif",
+// 	"password": "arif",
+// 	"email": "arif@gmail.com",
+// 	"phonenumber": 81234567890
+// }

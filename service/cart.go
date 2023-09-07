@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"gostore/entity"
-	"gostore/helper"
+	cartError "gostore/helper/domain/errorModel"
 	"gostore/middleware"
 	"gostore/repo"
 
@@ -35,20 +35,42 @@ func (c *cartService) GetCart(ctx context.Context) ([]entity.Cart, error) {
 }
 
 func (c *cartService) CreateCart(ctx context.Context, cart *entity.Cart) error {
-	userId := ctx.Value(middleware.GOSTORE_USERID).(int)
-	product, err := c.ProductRepo.GetProductById(ctx, cart.ProductId)
+	var (
+		detailError = make(map[string]any)
+		userId      = ctx.Value(middleware.GOSTORE_USERID).(int)
+	)
+
+	// input validation
+	if cart.ProductId == nil {
+		detailError["product_id"] = "this field is missing input"
+	} else if *cart.ProductId < 0 {
+		detailError["product_id"] = "this field must not negative"
+	}
+
+	if cart.Qty == nil {
+		detailError["qty"] = "this field is missing input"
+	} else if *cart.Qty < 0 {
+		detailError["qty"] = "this field must not negative"
+	}
+
+	if len(detailError) > 0 {
+		return cartError.ErrCartInput.AttachDetail(detailError)
+	}
+
+	product, err := c.ProductRepo.GetProductById(ctx, *cart.ProductId)
 	if err != nil {
 		return err
 	}
 
 	// check stock & valid product
-	if product.Stock < cart.Qty {
-		return helper.ErrStockNotEnough
+	if *product.Stock < *cart.Qty {
+		return cartError.ErrStockProductNotEnough
 	} else if product.Store.UserId == userId {
-		return helper.ErrAddProductTo
+		return cartError.ErrCantAddToCart
 	}
 
-	checkCart, err := c.Repo.GetCartProductId(ctx, cart.ProductId, userId)
+	// check by by product id and user id to create new cart or update the exist cart
+	checkCart, err := c.Repo.GetCartProductId(ctx, *cart.ProductId, userId)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			// create the cart if not productid on userid cart
@@ -60,24 +82,45 @@ func (c *cartService) CreateCart(ctx context.Context, cart *entity.Cart) error {
 	}
 
 	// supplement total qty if the product added is same
-	if cart.ProductId == checkCart.ProductId {
-		cart.Qty += checkCart.Qty
+	if *cart.ProductId == *checkCart.ProductId {
+		*cart.Qty += *checkCart.Qty
 	}
 
 	return c.Repo.UpdateCart(ctx, checkCart.Id, cart)
 }
 
 func (c *cartService) UpdateCart(ctx context.Context, id int, cart *entity.Cart) error {
+	var (
+		detailError = make(map[string]any)
+	)
+
+	// input validation
+	if cart.ProductId == nil {
+		detailError["product_id"] = "this field is missing input"
+	} else if *cart.ProductId < 0 {
+		detailError["product_id"] = "this field must not negative"
+	}
+
+	if cart.Qty == nil {
+		detailError["qty"] = "this field is missing input"
+	} else if *cart.Qty < 0 {
+		detailError["qty"] = "this field must not negative"
+	}
+
+	if len(detailError) > 0 {
+		return cartError.ErrCartInput.AttachDetail(detailError)
+	}
+
 	checkCart, err := c.Repo.GetCartById(ctx, id)
 	if err != nil {
 		return err
 	}
 
-	checkProduct, err := c.ProductRepo.GetProductById(ctx, checkCart.ProductId)
+	checkProduct, err := c.ProductRepo.GetProductById(ctx, *checkCart.ProductId)
 	if err != nil {
 		return err
-	} else if checkProduct.Stock < cart.Qty {
-		return helper.ErrStockNotEnough
+	} else if *checkProduct.Stock < *cart.Qty {
+		return cartError.ErrStockProductNotEnough
 	}
 
 	return c.Repo.UpdateCart(ctx, id, cart)
