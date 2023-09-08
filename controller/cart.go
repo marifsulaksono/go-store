@@ -76,6 +76,7 @@ func (c *CartController) UpdateCart(w http.ResponseWriter, r *http.Request) {
 		response.BuildErorResponse(w, err)
 		return
 	}
+	defer r.Body.Close()
 
 	err = c.Service.UpdateCart(ctx, id, &cart)
 	if err != nil {

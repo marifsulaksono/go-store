@@ -17,8 +17,8 @@ type userService struct {
 }
 
 type UserService interface {
-	GetUser(id int, username string) (entity.UserResponse, error)
-	CreateUser(user *entity.User) error
+	GetUser(ctx context.Context, id int, username string) (entity.UserResponse, error)
+	CreateUser(ctx context.Context, user *entity.User) error
 	UpdateUser(ctx context.Context, user *entity.User) error
 	ChangePasswordUser(ctx context.Context, userChange entity.UserChangePassword) error
 	DeleteUser(ctx context.Context) error
@@ -30,11 +30,11 @@ func NewUserService(r repo.UserRepository) UserService {
 	}
 }
 
-func (u *userService) GetUser(id int, username string) (entity.UserResponse, error) {
-	return u.Repo.GetUser(id, username)
+func (u *userService) GetUser(ctx context.Context, id int, username string) (entity.UserResponse, error) {
+	return u.Repo.GetUser(ctx, id, username)
 }
 
-func (u *userService) CreateUser(user *entity.User) error {
+func (u *userService) CreateUser(ctx context.Context, user *entity.User) error {
 	var (
 		detailError = make(map[string]any)
 	)
@@ -70,7 +70,7 @@ func (u *userService) CreateUser(user *entity.User) error {
 	user.Password = string(hashPwd)
 	user.CreateAt = time.Now()
 
-	err := u.Repo.CreateUser(user)
+	err := u.Repo.CreateUser(ctx, user)
 	if err != nil {
 		if strings.Contains(err.Error(), "Error 1062") {
 			return userError.ErrExistUser
@@ -94,10 +94,6 @@ func (u *userService) UpdateUser(ctx context.Context, user *entity.User) error {
 		detailError["username"] = "this field is missing input"
 	}
 
-	if user.Password == "" {
-		detailError["password"] = "this field is missing input"
-	}
-
 	if user.Email == "" {
 		detailError["email"] = "this field is missing input"
 	}
@@ -112,7 +108,7 @@ func (u *userService) UpdateUser(ctx context.Context, user *entity.User) error {
 		return userError.ErrUserInput.AttachDetail(detailError)
 	}
 
-	checkUser, err := u.Repo.GetUser(id, "")
+	checkUser, err := u.Repo.GetUser(ctx, id, "")
 	if err != nil {
 		return err
 	} else if checkUser.Id != id {
@@ -140,7 +136,7 @@ func (u *userService) ChangePasswordUser(ctx context.Context, userChange entity.
 		return userError.ErrUserInput.AttachDetail(detailError)
 	}
 
-	checkUser, err := u.Repo.GetUser(userId, "")
+	checkUser, err := u.Repo.GetUser(ctx, userId, "")
 	if err != nil {
 		return err
 	}
@@ -162,12 +158,12 @@ func (u *userService) ChangePasswordUser(ctx context.Context, userChange entity.
 
 func (u *userService) DeleteUser(ctx context.Context) error {
 	id := ctx.Value(middleware.GOSTORE_USERID).(int)
-	checkUser, err := u.Repo.GetUser(id, "")
+	checkUser, err := u.Repo.GetUser(ctx, id, "")
 	if err != nil {
 		return err
 	} else if checkUser.Id != id {
 		return userError.ErrInvalidUser
 	}
 
-	return u.Repo.DeleteUser(ctx)
+	return u.Repo.DeleteUser(ctx, id)
 }

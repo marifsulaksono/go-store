@@ -95,6 +95,7 @@ func (s *StoreController) UpdateStore(w http.ResponseWriter, r *http.Request) {
 		response.BuildErorResponse(w, err)
 		return
 	}
+	defer r.Body.Close()
 
 	if err := s.Service.UpdateStore(ctx, id, &store); err != nil {
 		response.BuildErorResponse(w, err)

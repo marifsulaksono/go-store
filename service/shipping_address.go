@@ -14,6 +14,7 @@ type shippingAddressService struct {
 
 type ShippingAddressService interface {
 	GetShippingAddressByUserId(ctx context.Context) ([]entity.ShippingAddress, error)
+	GetShippingAddressById(ctx context.Context, id int) (entity.ShippingAddress, error)
 	InsertShippingAddress(ctx context.Context, sa *entity.ShippingAddress) error
 	UpdateShippingAddress(ctx context.Context, id int, sa *entity.ShippingAddress) error
 	DeleteShippingAddress(ctx context.Context, id int) error
@@ -27,6 +28,10 @@ func NewShippingAddressService(repo repo.ShippingAddressRepo) ShippingAddressSer
 
 func (u *shippingAddressService) GetShippingAddressByUserId(ctx context.Context) ([]entity.ShippingAddress, error) {
 	return u.Repo.GetShippingAddressByUserId(ctx)
+}
+
+func (u *shippingAddressService) GetShippingAddressById(ctx context.Context, id int) (entity.ShippingAddress, error) {
+	return u.Repo.GetShippingAddressById(ctx, id)
 }
 
 func (u *shippingAddressService) InsertShippingAddress(ctx context.Context, sa *entity.ShippingAddress) error {

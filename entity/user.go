@@ -15,7 +15,7 @@ type User struct {
 	Phonenumber *int           `json:"phonenumber"`
 	Role        string         `json:"role"`
 	CreateAt    time.Time      `json:"create_at"`
-	UpdateAt    time.Time      `json:"update_at"`
+	UpdateAt    time.Time      `gorm:"null" json:"update_at"`
 	DeleteAt    gorm.DeletedAt `json:"-"`
 }
 

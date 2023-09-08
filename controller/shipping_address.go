@@ -38,6 +38,26 @@ func (u *ShippingAddressController) GetShippingAddressByUserId(w http.ResponseWr
 	response.BuildSuccesResponse(w, result, nil, message)
 }
 
+func (u *ShippingAddressController) GetShippingAddressById(w http.ResponseWriter, r *http.Request) {
+	var (
+		ctx = r.Context()
+	)
+
+	id, err := helper.ParamIdChecker(w, r)
+	if err != nil {
+		response.BuildErorResponse(w, err)
+		return
+	}
+
+	result, err := u.Service.GetShippingAddressById(ctx, id)
+	if err != nil {
+		response.BuildErorResponse(w, err)
+		return
+	}
+
+	response.BuildSuccesResponse(w, result, nil, "")
+}
+
 func (u *ShippingAddressController) InsertShippingAddress(w http.ResponseWriter, r *http.Request) {
 	var (
 		ctx = r.Context()

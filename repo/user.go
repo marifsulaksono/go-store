@@ -5,7 +5,6 @@ import (
 	"errors"
 	"gostore/entity"
 	userError "gostore/helper/domain/errorModel"
-	"gostore/middleware"
 	"time"
 
 	"gorm.io/gorm"
@@ -16,11 +15,11 @@ type userRepository struct {
 }
 
 type UserRepository interface {
-	GetUser(id int, username string) (entity.UserResponse, error)
-	CreateUser(user *entity.User) error
+	GetUser(ctx context.Context, id int, username string) (entity.UserResponse, error)
+	CreateUser(ctx context.Context, user *entity.User) error
 	UpdateUser(ctx context.Context, id int, user *entity.User) error
 	ChangePasswordUser(ctx context.Context, id int, password string) error
-	DeleteUser(ctx context.Context) error
+	DeleteUser(ctx context.Context, id int) error
 }
 
 func NewUserRepository(db *gorm.DB) UserRepository {
@@ -29,7 +28,7 @@ func NewUserRepository(db *gorm.DB) UserRepository {
 	}
 }
 
-func (u *userRepository) GetUser(id int, username string) (entity.UserResponse, error) {
+func (u *userRepository) GetUser(ctx context.Context, id int, username string) (entity.UserResponse, error) {
 	var (
 		user entity.UserResponse
 		db   = u.DB
@@ -43,6 +42,7 @@ func (u *userRepository) GetUser(id int, username string) (entity.UserResponse, 
 		db = db.Where("username = ?", username)
 	}
 
+	db.Where("delete_at is null")
 	err := db.First(&user).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -53,7 +53,7 @@ func (u *userRepository) GetUser(id int, username string) (entity.UserResponse, 
 	return user, nil
 }
 
-func (u *userRepository) CreateUser(user *entity.User) error {
+func (u *userRepository) CreateUser(ctx context.Context, user *entity.User) error {
 	user.Role = "Buyer"
 	return u.DB.Create(user).Error
 }
@@ -67,7 +67,6 @@ func (u *userRepository) ChangePasswordUser(ctx context.Context, id int, passwor
 	return u.DB.Model(entity.User{}).Where("id = ?", id).Update("password", password).Error
 }
 
-func (u *userRepository) DeleteUser(ctx context.Context) error {
-	id := ctx.Value(middleware.GOSTORE_USERID).(int)
-	return u.DB.Where("id = ?", id).Delete(entity.User{}).Error
+func (u *userRepository) DeleteUser(ctx context.Context, id int) error {
+	return u.DB.Where("id = ?", id).Delete(&entity.User{}).Error
 }

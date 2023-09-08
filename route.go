@@ -44,13 +44,15 @@ func routeInit(conn *gorm.DB) *mux.Router {
 	// ===================== Router User ======================
 	r.HandleFunc("/register", userController.Register).Methods(http.MethodPost)
 	r.HandleFunc("/login", userController.Login).Methods(http.MethodPost)
-	r.HandleFunc("/user/profile", middleware.JWTMiddleware(userController.UpdateUser)).Methods(http.MethodPut)
-	r.HandleFunc("/user/password", middleware.JWTMiddleware(userController.ChangePasswordUser)).Methods(http.MethodPatch)
-	r.HandleFunc("/user", middleware.JWTMiddleware(userController.DeleteUser)).Methods(http.MethodDelete)
-	r.HandleFunc("/user/address", middleware.JWTMiddleware(saController.GetShippingAddressByUserId)).Methods(http.MethodGet)
-	r.HandleFunc("/user/address", middleware.JWTMiddleware(saController.InsertShippingAddress)).Methods(http.MethodPost)
-	r.HandleFunc("/user/address/{id}", middleware.JWTMiddleware(saController.UpdateShippingAddress)).Methods(http.MethodPut)
-	r.HandleFunc("/user/address/{id}", middleware.JWTMiddleware(saController.DeleteShippingAddress)).Methods(http.MethodDelete)
+	r.HandleFunc("/users/profile", middleware.JWTMiddleware(userController.UpdateUser)).Methods(http.MethodPut)
+	r.HandleFunc("/users/password", middleware.JWTMiddleware(userController.ChangePasswordUser)).Methods(http.MethodPatch)
+	r.HandleFunc("/users", middleware.JWTMiddleware(userController.DeleteUser)).Methods(http.MethodDelete)
+	r.HandleFunc("/users/address", middleware.JWTMiddleware(saController.GetShippingAddressByUserId)).Methods(http.MethodGet)
+	r.HandleFunc("/users/address/{id}", middleware.JWTMiddleware(saController.GetShippingAddressById)).Methods(http.MethodGet)
+	r.HandleFunc("/users/address", middleware.JWTMiddleware(saController.InsertShippingAddress)).Methods(http.MethodPost)
+	r.HandleFunc("/users/address/{id}", middleware.JWTMiddleware(saController.UpdateShippingAddress)).Methods(http.MethodPut)
+	r.HandleFunc("/users/address/{id}", middleware.JWTMiddleware(saController.DeleteShippingAddress)).Methods(http.MethodDelete)
+	r.HandleFunc("/users/{id}", userController.GetUserById).Methods(http.MethodGet)
 
 	// ==================== Router Store ====================
 	r.HandleFunc("/stores", storeContoller.GetAllStore).Methods(http.MethodGet)

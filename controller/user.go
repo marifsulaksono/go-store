@@ -28,7 +28,11 @@ func NewUserController(s service.UserService) *UserController {
 }
 
 func (u *UserController) Register(w http.ResponseWriter, r *http.Request) {
-	var user entity.User
+	var (
+		ctx  = r.Context()
+		user entity.User
+	)
+
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
 		response.BuildErorResponse(w, err)
@@ -36,7 +40,7 @@ func (u *UserController) Register(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	if err := u.Service.CreateUser(&user); err != nil {
+	if err := u.Service.CreateUser(ctx, &user); err != nil {
 		response.BuildErorResponse(w, err)
 		return
 	}
@@ -45,6 +49,10 @@ func (u *UserController) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 func (u *UserController) Login(w http.ResponseWriter, r *http.Request) {
+	var (
+		ctx = r.Context()
+	)
+
 	// Basic Authentication
 	username, password, ok := r.BasicAuth()
 	if !ok {
@@ -55,7 +63,7 @@ func (u *UserController) Login(w http.ResponseWriter, r *http.Request) {
 
 	// Check user validation on database
 	var userLogin entity.UserResponse
-	userLogin, err := u.Service.GetUser(0, username)
+	userLogin, err := u.Service.GetUser(ctx, 0, username)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			response.BuildErorResponse(w, userError.ErrLogin)
@@ -101,14 +109,38 @@ func (u *UserController) Login(w http.ResponseWriter, r *http.Request) {
 	response.BuildSuccesResponse(w, tokenString, metadata, "Login success")
 }
 
-func (u *UserController) UpdateUser(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	var user entity.User
-	err := json.NewDecoder(r.Body).Decode(&user)
+func (u *UserController) GetUserById(w http.ResponseWriter, r *http.Request) {
+	var (
+		ctx = r.Context()
+	)
+
+	id, err := helper.ParamIdChecker(w, r)
+	if err != nil {
+		response.BuildErorResponse(w, err)
+	}
+
+	result, err := u.Service.GetUser(ctx, id, "")
 	if err != nil {
 		response.BuildErorResponse(w, err)
 		return
 	}
+
+	response.BuildSuccesResponse(w, result, nil, "")
+}
+
+func (u *UserController) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	var (
+		ctx  = r.Context()
+		user entity.User
+	)
+
+	err := json.NewDecoder(r.Body).Decode(&user)
+	if err != nil {
+		fmt.Println(err)
+		response.BuildErorResponse(w, err)
+		return
+	}
+	defer r.Body.Close()
 
 	err = u.Service.UpdateUser(ctx, &user)
 	if err != nil {
@@ -116,7 +148,7 @@ func (u *UserController) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.BuildSuccesResponse(w, nil, nil, "Success update user's profile")
+	response.BuildSuccesResponse(w, nil, nil, "Success update user profile")
 }
 
 func (u *UserController) ChangePasswordUser(w http.ResponseWriter, r *http.Request) {
@@ -127,6 +159,7 @@ func (u *UserController) ChangePasswordUser(w http.ResponseWriter, r *http.Reque
 		response.BuildErorResponse(w, err)
 		return
 	}
+	defer r.Body.Close()
 
 	err = u.Service.ChangePasswordUser(ctx, userChange)
 	if err != nil {
