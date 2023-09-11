@@ -6,8 +6,10 @@ import (
 	userError "gostore/helper/domain/errorModel"
 	"gostore/middleware"
 	"gostore/repo"
+	"regexp"
 	"strings"
 	"time"
+	"unicode"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -45,10 +47,18 @@ func (u *userService) CreateUser(ctx context.Context, user *entity.User) error {
 
 	if user.Username == "" {
 		detailError["username"] = "this field is missing input"
+	} else if len(user.Username) > 50 {
+		detailError["username"] = "username lenght max 50"
+	} else if isCorrectUsername(user.Username) {
+		detailError["username"] = "username only alphabets and numberic allowed"
 	}
 
 	if user.Password == "" {
 		detailError["password"] = "this field is missing input"
+	} else if !isCorrectPassword(user.Password) {
+		detailError["password"] = "need at least one number, lowercase, uppercase, and special character"
+	} else if len(user.Password) < 8 || len(user.Password) > 30 {
+		detailError["password"] = "minimum length is 8 and maximum length is 30"
 	}
 
 	if user.Email == "" {
@@ -130,6 +140,10 @@ func (u *userService) ChangePasswordUser(ctx context.Context, userChange entity.
 
 	if userChange.NewPassword == "" {
 		detailError["new_password"] = "this field is missing input"
+	} else if !isCorrectPassword(userChange.NewPassword) {
+		detailError["password"] = "need at least one number, lowercase, uppercase, and special character"
+	} else if len(userChange.NewPassword) < 8 || len(userChange.NewPassword) > 30 {
+		detailError["password"] = "minimum length is 8 and maximum length is 30"
 	}
 
 	if len(detailError) > 0 {
@@ -166,4 +180,50 @@ func (u *userService) DeleteUser(ctx context.Context) error {
 	}
 
 	return u.Repo.DeleteUser(ctx, id)
+}
+
+// Username validation, username only allowed alpabhet and numberik
+func isCorrectUsername(s string) bool {
+	for _, r := range s {
+		// jika username bukan alphabet atau numerik, maka tidak valid
+		if !unicode.IsLetter(r) || !unicode.IsNumber(r) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Password validation, password must have minimum 1 number, lowercase, uppercase, and special character
+func isCorrectPassword(s string) bool {
+	numeric := regexp.MustCompile(`[0-9]`).MatchString(s)
+	lowcase := regexp.MustCompile(`[a-z]`).MatchString(s)
+	upcase := regexp.MustCompile(`[A-Z]`).MatchString(s)
+	specialChar := func(s string) bool {
+		for _, c := range s {
+			if unicode.IsPunct(c) || unicode.IsMark(c) {
+				return true
+			}
+		}
+		return false
+	}
+
+	// validation
+	if !numeric {
+		return false
+	}
+
+	if !lowcase {
+		return false
+	}
+
+	if !upcase {
+		return false
+	}
+
+	if !specialChar(s) {
+		return false
+	}
+
+	return true
 }
