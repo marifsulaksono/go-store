@@ -54,7 +54,8 @@ func (u *userRepository) GetUser(ctx context.Context, id int, username string) (
 }
 
 func (u *userRepository) CreateUser(ctx context.Context, user *entity.User) error {
-	user.Role = "Buyer"
+	user.Role = "buyer"
+	user.CreateAt = time.Now()
 	return u.DB.Create(user).Error
 }
 

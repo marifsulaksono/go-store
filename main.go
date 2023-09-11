@@ -18,6 +18,7 @@ func main() {
 
 	conf := config.GetConfig()
 	conn := config.Connect(conf)
+	config.AutoMigrate(conn)
 
 	// ==================== Start Server ====================
 	fmt.Printf("Server starting at localhost:%v ...\n", conf.Port)

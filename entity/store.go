@@ -7,14 +7,14 @@ import (
 )
 
 type Store struct {
-	Id          int            `json:"id"`
-	NameStore   string         `json:"name_store"`
-	Address     string         `json:"address"`
-	Email       string         `json:"email"`
+	Id          int            `gorm:"primaryKey,autoIncrement" json:"id"`
+	NameStore   string         `gorm:"not null;size:255" json:"name_store"`
+	Address     string         `gorm:"not null" json:"address"`
+	Email       string         `gorm:"not null" json:"email"`
 	Description string         `json:"desc"`
-	Status      string         `json:"status"`
-	UserId      int            `json:"user_id"`
-	CreateAt    time.Time      `json:"create_at"`
+	Status      string         `gorm:"not null;default:active" json:"status"`
+	UserId      int            `gorm:"not null" json:"user_id"`
+	CreateAt    time.Time      `gorm:"not null" json:"create_at"`
 	DeleteAt    gorm.DeletedAt `json:"-"`
 }
 

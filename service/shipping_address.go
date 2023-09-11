@@ -49,6 +49,8 @@ func (u *shippingAddressService) InsertShippingAddress(ctx context.Context, sa *
 
 	if sa.Phonenumber == "" {
 		detailError["phonenumber"] = "this field is missing input"
+	} else if len(sa.Phonenumber) > 16 {
+		detailError["phonenumber"] = "maximum length is 16 digit"
 	}
 
 	if len(detailError) > 0 {

@@ -7,25 +7,25 @@ import (
 )
 
 type Transaction struct {
-	Id                int               `json:"id"`
-	Date              time.Time         `json:"date"`
-	Total             int               `json:"total"`
-	Status            string            `json:"status"`
-	ShippingAddressId *int              `json:"shipping_address_id"`
-	ShippingAddress   ShippingAddress   `json:"shipping_address"`
-	UserId            int               `json:"-"`
-	Items             []TransactionItem `json:"items" gorm:"foreignKey:TransactionId;references:Id"`
+	Id                int               `gorm:"primaryKey,autoIncrement" json:"id"`
+	Date              time.Time         `gorm:"not null" json:"date"`
+	Total             int               `gorm:"not null" json:"total"`
+	Status            string            `gorm:"not null" json:"status"`
+	ShippingAddressId *int              `gorm:"not null" json:"shipping_address_id"`
+	ShippingAddress   ShippingAddress   `gorm:"-:migration" json:"shipping_address"`
+	UserId            int               `gorm:"not null" json:"-"`
+	Items             []TransactionItem `json:"items" gorm:"-:migration;foreignKey:TransactionId;references:Id"`
 	DeleteAt          gorm.DeletedAt    `json:"-"`
 }
 
 type TransactionItem struct {
-	Id            int                        `json:"id"`
-	TransactionId int                        `json:"-"`
-	ProductId     *int                       `json:"product_id"`
-	Product       ProductTransactionResponse `gorm:"foreignKey:ProductId" json:"items"`
-	Qty           *int                       `json:"qty"`
-	Price         int                        `json:"price"`
-	Subtotal      int                        `json:"subtotal"`
+	Id            int                        `gorm:"primaryKey,autoIncrement" json:"id"`
+	TransactionId int                        `gorm:"not null" json:"-"`
+	ProductId     *int                       `gorm:"not null" json:"product_id"`
+	Product       ProductTransactionResponse `gorm:"-:migration" json:"items"`
+	Qty           *int                       `gorm:"not null" json:"qty"`
+	Price         int                        `gorm:"not null" json:"price"`
+	Subtotal      int                        `gorm:"not null" json:"subtotal"`
 }
 
 type AllTransactionResponse struct {

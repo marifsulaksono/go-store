@@ -5,17 +5,17 @@ import (
 )
 
 type Product struct {
-	Id         int            `json:"id"`
-	Name       string         `json:"name"`
-	Stock      *int           `json:"stock"`
-	Price      *int           `json:"price"`
-	Sold       int            `json:"sold"`
+	Id         int            `gorm:"primaryKey,autoIncrement" json:"id"`
+	Name       string         `gorm:"not null;size:255" json:"name"`
+	Stock      *int           `gorm:"not null" json:"stock"`
+	Price      *int           `gorm:"not null" json:"price"`
+	Sold       int            `gorm:"not null;default:0" json:"sold"`
 	Desc       string         `json:"desc"`
-	Status     string         `json:"status"`
-	CategoryId *int           `json:"category_id"`
-	Category   Category       `json:"category"`
-	StoreId    int            `json:"store_id"`
-	Store      StoreResponse  `json:"store"`
+	Status     string         `gorm:"not null" json:"status"`
+	CategoryId *int           `gorm:"not null" json:"category_id"`
+	Category   Category       `gorm:"-:migration" json:"category"`
+	StoreId    int            `gorm:"not null" json:"store_id"`
+	Store      StoreResponse  `gorm:"-:migration" json:"store"`
 	DeleteAt   gorm.DeletedAt `json:"-"`
 }
 

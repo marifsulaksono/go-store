@@ -8,7 +8,6 @@ import (
 	"gostore/repo"
 	"regexp"
 	"strings"
-	"time"
 	"unicode"
 
 	"golang.org/x/crypto/bcrypt"
@@ -78,7 +77,6 @@ func (u *userService) CreateUser(ctx context.Context, user *entity.User) error {
 	// generate password entry to be encrypt
 	hashPwd, _ := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	user.Password = string(hashPwd)
-	user.CreateAt = time.Now()
 
 	err := u.Repo.CreateUser(ctx, user)
 	if err != nil {

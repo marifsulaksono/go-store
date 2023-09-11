@@ -7,15 +7,15 @@ import (
 )
 
 type User struct {
-	Id          int            `json:"id"`
-	Name        string         `json:"name"`
-	Username    string         `json:"username"`
-	Password    string         `json:"password"`
-	Email       string         `json:"email"`
-	Phonenumber *int           `json:"phonenumber"`
-	Role        string         `json:"role"`
-	CreateAt    time.Time      `json:"create_at"`
-	UpdateAt    time.Time      `gorm:"null" json:"update_at"`
+	Id          int            `gorm:"primaryKey,autoIncrement" json:"id"`
+	Name        string         `gorm:"not null" json:"name"`
+	Username    string         `gorm:"unique;not null;size:50" json:"username"`
+	Password    string         `gorm:"not null" json:"password"`
+	Email       string         `gorm:"unique;not null;size:255" json:"email"`
+	Phonenumber *int           `gorm:"not null" json:"phonenumber"`
+	Role        string         `gorm:"not null;default:buyer" json:"role"`
+	CreateAt    time.Time      `gorm:"not null" json:"create_at"`
+	UpdateAt    time.Time      `gorm:"default:null" json:"update_at"`
 	DeleteAt    gorm.DeletedAt `json:"-"`
 }
 
@@ -32,14 +32,6 @@ type UserResponse struct {
 type UserChangePassword struct {
 	OldPassword string `json:"old_password"`
 	NewPassword string `json:"new_password"`
-}
-
-type ShippingAddress struct {
-	Id            int    `json:"id"`
-	UserId        int    `json:"user_id"`
-	RecipientName string `json:"recipient_name"`
-	Address       string `json:"address"`
-	Phonenumber   string `json:"phonenumber"`
 }
 
 func (UserResponse) TableName() string {

@@ -1,11 +1,11 @@
 package entity
 
 type Cart struct {
-	Id        int                        `json:"id"`
-	UserId    int                        `json:"-"`
-	ProductId *int                       `json:"product_id"`
-	Product   ProductTransactionResponse `json:"product"`
-	Qty       *int                       `json:"qty"`
+	Id        int                        `gorm:"primaryKey,autoIncrement" json:"id"`
+	UserId    int                        `gorm:"not null" json:"-"`
+	ProductId *int                       `gorm:"not null" json:"product_id"`
+	Product   ProductTransactionResponse `gorm:"-:migration" json:"product"`
+	Qty       *int                       `gorm:"not null" json:"qty"`
 }
 
 /*
