@@ -23,7 +23,7 @@ func routeInit(conn *gorm.DB) *mux.Router {
 
 	userService := service.NewUserService(userRepo)
 	saService := service.NewShippingAddressService(saRepo)
-	categoryService := service.NewCategoryService(*categoryRepo)
+	categoryService := service.NewCategoryService(categoryRepo)
 	storeService := service.NewStoreService(storeRepo, productRepo)
 	productService := service.NewProductService(productRepo)
 	cartService := service.NewCartService(cartRepo, productRepo)
@@ -31,7 +31,7 @@ func routeInit(conn *gorm.DB) *mux.Router {
 
 	userController := controller.NewUserController(userService)
 	saController := controller.NewShippingAddressController(saService)
-	categoryController := controller.NewCategoryController(*categoryService)
+	categoryController := controller.NewCategoryController(categoryService)
 	storeContoller := controller.NewStoreController(storeService)
 	productController := controller.NewProductController(productService)
 	cartController := controller.NewCartController(cartService)
@@ -73,7 +73,11 @@ func routeInit(conn *gorm.DB) *mux.Router {
 	r.HandleFunc("/products/{id}", middleware.JWTMiddleware(productController.UpdateProduct)).Methods(http.MethodPut)                 // update product data by id
 
 	// ==================== Router Category ====================
-	r.HandleFunc("/categories", middleware.JWTMiddleware(categoryController.GetAllCategories)).Methods(http.MethodGet)
+	r.HandleFunc("/categories", categoryController.GetAllCategories).Methods(http.MethodGet)
+	r.HandleFunc("/categories/{id}", categoryController.GetCategoryById).Methods(http.MethodGet)
+	r.HandleFunc("/categories", categoryController.InsertCategory).Methods(http.MethodPost)
+	r.HandleFunc("/categories/{id}", categoryController.UpdateCategory).Methods(http.MethodPut)
+	r.HandleFunc("/categories/{id}", categoryController.DeleteCategory).Methods(http.MethodDelete)
 
 	// ==================== Router Cart ====================
 	r.HandleFunc("/carts", middleware.JWTMiddleware(cartController.GetCartByUserId)).Methods(http.MethodGet)
