@@ -22,12 +22,12 @@ This is the instruction how you can test _go-store_ on your local computer:
   ```sh
   go version
   ```
-  If not installed and you have an IDE like Visual Studio Code, you can get it on [Go Documentaion](https://go.dev/doc/install)
+  If not installed, you can get it on [Go Documentaion](https://go.dev/doc/install)
 - Make sure that you have installed Git on your computer.
   ```sh
   git --version
   ```
-  If not installed and you have an IDE like Visual Studio Code, you can get it on [Git Documentaion](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) <br />
+  If not installed, you can get it on [Git Documentaion](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) <br />
 ## Clone and Prepare Project
 - Clone this project.
   ```sh
