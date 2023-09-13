@@ -70,8 +70,8 @@ This is the instruction how you can test _go-store_ on your local computer:
 ```json
 {
 	"name": "Muhammad Arif Sulaksono",
-	"username": "arif",
-	"password": "arif",
+	"username": "arif1234",
+	"password": "Arif1234",
 	"email": "arif@gmail.com",
 	"phonenumber": 81234567890
 }
@@ -85,7 +85,7 @@ This is the instruction how you can test _go-store_ on your local computer:
 ```json
 {
 	"name": "Muhammad Arif Sulaksono",
-	"username": "arif",
+	"username": "arif4321",
 	"email": "arif@gmail.com",
 	"phonenumber": 81234567890
 }
@@ -94,8 +94,8 @@ This is the instruction how you can test _go-store_ on your local computer:
 - ```/users/password```, Change password logined user . Example body:
 ```json
 {
-	"old_password": "arif",
-  "new_password": "arif123"
+	"old_password": "Arif1234:",
+  	"new_password": "Arif4231@"
 }
 ```
 > [!NOTE]
@@ -187,7 +187,7 @@ This is the instruction how you can test _go-store_ on your local computer:
   | --- | --- | --- |
   | Keyword | Filtering product by name of product | /products/search?keyword=laptop |
   | Status | Filtering product by status (sale or soldout) | /products/search?status=sale |
-  | Sort By | Sorting product by name, stock, price, and sold product. By default sort by id | /products/search?sortBy=DESC |
+  | Sort By | Sorting product by name, stock, price, and sold product. By default sort by id | /products/search?sortBy=name |
   | Order | Ordering product by ascending or descanding. By default order is ascending | /products/search?order=DESC |
   | Minimum Price | Set the minimum price of product search | /products/search?minPrice=10000 |
   | Maximum Price | Set the maximum price of product search | /products/search?minPrice=10000000 |
@@ -195,6 +195,8 @@ This is the instruction how you can test _go-store_ on your local computer:
   | Page | Set page of pagination. By defailt is 1 | /products/search?page=2 |
   | Category ID | Filtering product by Category ID | /products/search?categoryId=1 |
   | Store ID | Filtering product by Store ID | /products/search?storeId=1 |
+
+  You also can combine the parameter with '&' as separator. Example: ```/products/search?keyword=laptop&sortBy=price```
 - ```/products/{id}```, Get product by id.
 ### POST
 - ```/products```, Create new product. Example body:
