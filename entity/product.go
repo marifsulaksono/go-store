@@ -9,7 +9,7 @@ type Product struct {
 	Name       string         `gorm:"not null;size:255" json:"name"`
 	Stock      *int           `gorm:"not null" json:"stock"`
 	Price      *int           `gorm:"not null" json:"price"`
-	Sold       int            `gorm:"not null;default:0" json:"sold"`
+	Sold       int            `gorm:"null" json:"sold"`
 	Desc       string         `json:"desc"`
 	Status     string         `gorm:"not null" json:"status"`
 	CategoryId *int           `gorm:"not null" json:"category_id"`

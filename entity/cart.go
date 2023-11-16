@@ -8,18 +8,7 @@ type Cart struct {
 	Qty       *int                       `gorm:"not null" json:"qty"`
 }
 
-/*
-
-Body Request:
-"POST":
-{
-	"product_id": 1,
-	"qty": 10
-}
-
-"PUT":
-{
-	"qty": 20
-}
-
-*/
+// {
+// 	"product_id": 1,
+// 	"qty": 10
+// }
