@@ -25,7 +25,7 @@ type Config struct {
 func GetConfig() Config {
 	return Config{
 		Port: os.Getenv(serverPort),
-		DatabaseURL: fmt.Sprintf("%v:%v@tcp(%v)/%v", os.Getenv(dbUsername),
+		DatabaseURL: fmt.Sprintf("%v:%v@tcp(%v)/%v?parseTime=true", os.Getenv(dbUsername),
 			os.Getenv(dbPassword), os.Getenv(dbHost), os.Getenv(dbName)),
 	}
 }

@@ -39,7 +39,7 @@ This is the instruction how you can test _go-store_ on your local computer:
   DB_USERNAME=root
   DB_PASSWORD=root
   DB_HOST=127.0.0.1:3306
-  DB_NAME=go-store?parseTime=true
+  DB_NAME=db_store
   SERVER_PORT=8080
   ```
   Adjust to your environmental values. Then, **save file with name ```.env```** <br />
