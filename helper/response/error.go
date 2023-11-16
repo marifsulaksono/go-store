@@ -3,6 +3,7 @@ package response
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 )
 
@@ -53,6 +54,7 @@ func (e MyErr) AttachDetail(detail map[string]any) MyErr {
 
 func BuildErorResponse(w http.ResponseWriter, err error) {
 	response := buildError(err)
+	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(response.Status)
 	json.NewEncoder(w).Encode(response)
 }
@@ -66,6 +68,7 @@ func buildError(err error) MyErr {
 		response.Details = checkErr.Details
 	} else {
 		response = ErrorInternalServer
+		log.Printf("Internal Server Error : %v", err)
 	}
 
 	return response

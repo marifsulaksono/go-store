@@ -14,6 +14,7 @@ type MySuccess struct {
 
 func BuildSuccesResponse(w http.ResponseWriter, data, metadata interface{}, message string) {
 	payload := buildSuccess(data, metadata, message)
+	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(payload)
 }
