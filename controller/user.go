@@ -9,10 +9,7 @@ import (
 	"gostore/helper/response"
 	"gostore/service"
 	"net/http"
-	"os"
-	"time"
 
-	"github.com/golang-jwt/jwt/v4"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -80,21 +77,7 @@ func (u *UserController) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create token claim
-	jwtExpTime := time.Now().Add(time.Hour * 24)
-	claims := &helper.JWTClaim{
-		Id:       userLogin.Id,
-		Username: userLogin.Username,
-		Role:     userLogin.Role,
-		RegisteredClaims: jwt.RegisteredClaims{
-			Issuer:    "go-store",
-			ExpiresAt: jwt.NewNumericDate(jwtExpTime),
-		},
-	}
-
-	// Generate JWT Token
-	tokenAlgorithm := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := tokenAlgorithm.SignedString([]byte(os.Getenv("JWT_SECRET_KEY")))
+	token, err := helper.GenerateToken(userLogin)
 	if err != nil {
 		response.BuildErorResponse(w, err)
 		return
@@ -106,7 +89,7 @@ func (u *UserController) Login(w http.ResponseWriter, r *http.Request) {
 		Role:     userLogin.Role,
 	}
 
-	response.BuildSuccesResponse(w, tokenString, metadata, "Login success")
+	response.BuildSuccesResponse(w, token, metadata, "Login success")
 }
 
 func (u *UserController) GetUserById(w http.ResponseWriter, r *http.Request) {

@@ -2,9 +2,11 @@ package helper
 
 import (
 	"fmt"
+	"gostore/entity"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/golang-jwt/jwt/v4"
 )
@@ -23,6 +25,24 @@ const (
 	GOSTORE_USERNAME Key = "go-store-user"
 	GOSTORE_USERROLE Key = "go-store-role"
 )
+
+func GenerateToken(user entity.UserResponse) (string, error) {
+	// Create token claim
+	jwtExpTime := time.Now().Add(time.Hour * 24)
+	claims := &JWTClaim{
+		Id:       user.Id,
+		Username: user.Username,
+		Role:     user.Role,
+		RegisteredClaims: jwt.RegisteredClaims{
+			Issuer:    "go-store",
+			ExpiresAt: jwt.NewNumericDate(jwtExpTime),
+		},
+	}
+
+	// Generate JWT Token
+	tokenAlgorithm := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return tokenAlgorithm.SignedString([]byte(os.Getenv("JWT_SECRET_KEY")))
+}
 
 func GetTokenFromHeader(w http.ResponseWriter, r *http.Request) string {
 	authHeader := r.Header.Get("Authorization")
