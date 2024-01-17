@@ -3,8 +3,8 @@ package service
 import (
 	"context"
 	"gostore/entity"
+	"gostore/helper"
 	saError "gostore/helper/domain/errorModel"
-	"gostore/middleware"
 	"gostore/repo"
 )
 
@@ -62,7 +62,7 @@ func (u *shippingAddressService) InsertShippingAddress(ctx context.Context, sa *
 
 func (u *shippingAddressService) UpdateShippingAddress(ctx context.Context, id int, sa *entity.ShippingAddress) error {
 	var (
-		userId      = ctx.Value(middleware.GOSTORE_USERID).(int)
+		userId      = ctx.Value(helper.GOSTORE_USERID).(int)
 		detailError = make(map[string]any)
 	)
 
@@ -96,7 +96,7 @@ func (u *shippingAddressService) UpdateShippingAddress(ctx context.Context, id i
 }
 
 func (u *shippingAddressService) DeleteShippingAddress(ctx context.Context, id int) error {
-	userId := ctx.Value(middleware.GOSTORE_USERID).(int)
+	userId := ctx.Value(helper.GOSTORE_USERID).(int)
 	existSA, err := u.Repo.GetShippingAddressById(ctx, id)
 	if err != nil {
 		return err

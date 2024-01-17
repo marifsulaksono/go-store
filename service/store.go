@@ -4,8 +4,8 @@ import (
 	"context"
 	_ "errors"
 	"gostore/entity"
+	"gostore/helper"
 	storeError "gostore/helper/domain/errorModel"
-	"gostore/middleware"
 	"gostore/repo"
 	"strings"
 	"time"
@@ -46,7 +46,7 @@ func (s *storeService) GetStoreById(ctx context.Context, id int) (entity.StoreRe
 func (s *storeService) CreateStore(ctx context.Context, store *entity.Store) error {
 	var (
 		detailError = make(map[string]any)
-		userId      = ctx.Value(middleware.GOSTORE_USERID).(int)
+		userId      = ctx.Value(helper.GOSTORE_USERID).(int)
 	)
 
 	if store.NameStore == "" {
@@ -81,7 +81,7 @@ func (s *storeService) CreateStore(ctx context.Context, store *entity.Store) err
 func (s *storeService) UpdateStore(ctx context.Context, id int, store *entity.Store) error {
 	var (
 		detailError = make(map[string]any)
-		userId      = ctx.Value(middleware.GOSTORE_USERID).(int)
+		userId      = ctx.Value(helper.GOSTORE_USERID).(int)
 	)
 
 	if store.NameStore == "" {
@@ -115,7 +115,7 @@ func (s *storeService) UpdateStore(ctx context.Context, id int, store *entity.St
 }
 
 func (s *storeService) SoftDeleteStore(ctx context.Context, id int) error {
-	userId := ctx.Value(middleware.GOSTORE_USERID).(int)
+	userId := ctx.Value(helper.GOSTORE_USERID).(int)
 	checkStore, err := s.Repo.CheckStoreById(ctx, id)
 	if checkStore.UserId != userId {
 		return storeError.ErrInvalidUserStore

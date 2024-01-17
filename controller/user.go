@@ -7,9 +7,9 @@ import (
 	"gostore/helper"
 	userError "gostore/helper/domain/errorModel"
 	"gostore/helper/response"
-	"gostore/middleware"
 	"gostore/service"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -82,7 +82,7 @@ func (u *UserController) Login(w http.ResponseWriter, r *http.Request) {
 
 	// Create token claim
 	jwtExpTime := time.Now().Add(time.Hour * 24)
-	claims := &middleware.JWTClaim{
+	claims := &helper.JWTClaim{
 		Id:       userLogin.Id,
 		Username: userLogin.Username,
 		Role:     userLogin.Role,
@@ -94,7 +94,7 @@ func (u *UserController) Login(w http.ResponseWriter, r *http.Request) {
 
 	// Generate JWT Token
 	tokenAlgorithm := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := tokenAlgorithm.SignedString(middleware.JWT_SECRET_KEY)
+	tokenString, err := tokenAlgorithm.SignedString([]byte(os.Getenv("JWT_SECRET_KEY")))
 	if err != nil {
 		response.BuildErorResponse(w, err)
 		return
@@ -178,6 +178,6 @@ func (u *UserController) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	message := fmt.Sprintf("Success delete user %d", ctx.Value(middleware.GOSTORE_USERID))
+	message := fmt.Sprintf("Success delete user %d", ctx.Value(helper.GOSTORE_USERID))
 	response.BuildSuccesResponse(w, nil, nil, message)
 }

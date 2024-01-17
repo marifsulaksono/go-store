@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"gostore/entity"
+	"gostore/helper"
 	cartError "gostore/helper/domain/errorModel"
-	"gostore/middleware"
 
 	"gorm.io/gorm"
 )
@@ -30,14 +30,14 @@ func NewCartRepository(db *gorm.DB) CartRepository {
 }
 
 func (c *cartRepository) GetCart(ctx context.Context) ([]entity.Cart, error) {
-	userId := ctx.Value(middleware.GOSTORE_USERID).(int)
+	userId := ctx.Value(helper.GOSTORE_USERID).(int)
 	var result []entity.Cart
 	err := c.DB.Where("user_id = ?", userId).Preload("Product.Store").Find(&result).Error
 	return result, err
 }
 
 func (c *cartRepository) GetCartById(ctx context.Context, id int) (entity.Cart, error) {
-	userId := ctx.Value(middleware.GOSTORE_USERID)
+	userId := ctx.Value(helper.GOSTORE_USERID)
 	var result entity.Cart
 	err := c.DB.Where("id = ? and user_id = ?", id, userId).First(&result).Error
 	if err != nil {

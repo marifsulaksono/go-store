@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"gostore/entity"
+	"gostore/helper"
 	saError "gostore/helper/domain/errorModel"
-	"gostore/middleware"
 
 	"gorm.io/gorm"
 )
@@ -41,14 +41,14 @@ func (u *shippingAddressRepo) GetShippingAddressById(ctx context.Context, id int
 }
 
 func (u *shippingAddressRepo) GetShippingAddressByUserId(ctx context.Context) ([]entity.ShippingAddress, error) {
-	userId := ctx.Value(middleware.GOSTORE_USERID).(int)
+	userId := ctx.Value(helper.GOSTORE_USERID).(int)
 	var SA []entity.ShippingAddress
 	err := u.DB.Where("user_id = ?", userId).Find(&SA).Error
 	return SA, err
 }
 
 func (u *shippingAddressRepo) InsertShippingAddress(ctx context.Context, sa *entity.ShippingAddress) error {
-	sa.UserId = ctx.Value(middleware.GOSTORE_USERID).(int)
+	sa.UserId = ctx.Value(helper.GOSTORE_USERID).(int)
 	return u.DB.Create(sa).Error
 }
 

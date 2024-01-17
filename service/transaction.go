@@ -3,8 +3,8 @@ package service
 import (
 	"context"
 	"gostore/entity"
+	"gostore/helper"
 	transactionError "gostore/helper/domain/errorModel"
-	"gostore/middleware"
 	"gostore/repo"
 )
 
@@ -41,7 +41,7 @@ func (tr *transactionService) CreateTransaction(ctx context.Context, items *enti
 	}
 
 	checkSA, err := tr.SARepo.GetShippingAddressById(ctx, *items.ShippingAddressId)
-	if checkSA.UserId != ctx.Value(middleware.GOSTORE_USERID).(int) {
+	if checkSA.UserId != ctx.Value(helper.GOSTORE_USERID).(int) {
 		return transactionError.ErrInvalidSA
 	} else if err != nil {
 		return err

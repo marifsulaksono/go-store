@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"gostore/entity"
+	"gostore/helper"
 	cartError "gostore/helper/domain/errorModel"
-	"gostore/middleware"
 	"gostore/repo"
 
 	"gorm.io/gorm"
@@ -37,7 +37,7 @@ func (c *cartService) GetCart(ctx context.Context) ([]entity.Cart, error) {
 func (c *cartService) CreateCart(ctx context.Context, cart *entity.Cart) error {
 	var (
 		detailError = make(map[string]any)
-		userId      = ctx.Value(middleware.GOSTORE_USERID).(int)
+		userId      = ctx.Value(helper.GOSTORE_USERID).(int)
 	)
 
 	// input validation

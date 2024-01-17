@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"gostore/entity"
+	"gostore/helper"
 	transactionError "gostore/helper/domain/errorModel"
-	"gostore/middleware"
 	"time"
 
 	"gorm.io/gorm"
@@ -33,7 +33,7 @@ func NewTransactionRepository(db *gorm.DB) TransactionRepository {
 func (tr *transactionRepository) GetTransactions(ctx context.Context) ([]entity.AllTransactionResponse, error) {
 	var (
 		result []entity.AllTransactionResponse
-		userId = ctx.Value(middleware.GOSTORE_USERID)
+		userId = ctx.Value(helper.GOSTORE_USERID)
 	)
 
 	err := tr.DB.Where("user_id = ?", userId).Preload("Items.Product.Store").Find(&result).Error
@@ -57,7 +57,7 @@ func (tr *transactionRepository) CreateTransaction(ctx context.Context, items *e
 	var (
 		transaction entity.Transaction
 		total       int
-		userId      = ctx.Value(middleware.GOSTORE_USERID).(int)
+		userId      = ctx.Value(helper.GOSTORE_USERID).(int)
 		detailError = make(map[string]any)
 	)
 

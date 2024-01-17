@@ -44,6 +44,7 @@ func routeInit(conn *gorm.DB) *mux.Router {
 	// ===================== Router User ======================
 	r.HandleFunc("/register", userController.Register).Methods(http.MethodPost)
 	r.HandleFunc("/login", userController.Login).Methods(http.MethodPost)
+
 	r.HandleFunc("/users/profile", middleware.JWTMiddleware(userController.UpdateUser)).Methods(http.MethodPut)
 	r.HandleFunc("/users/password", middleware.JWTMiddleware(userController.ChangePasswordUser)).Methods(http.MethodPatch)
 	r.HandleFunc("/users", middleware.JWTMiddleware(userController.DeleteUser)).Methods(http.MethodDelete)
@@ -57,27 +58,27 @@ func routeInit(conn *gorm.DB) *mux.Router {
 	// ==================== Router Store ====================
 	r.HandleFunc("/stores", storeContoller.GetAllStore).Methods(http.MethodGet)
 	r.HandleFunc("/stores/{id}", storeContoller.GetStoreById).Methods(http.MethodGet)
-	r.HandleFunc("/stores", middleware.JWTMiddleware(storeContoller.CreateStore)).Methods(http.MethodPost)
-	r.HandleFunc("/stores/delete/{id}", middleware.JWTMiddleware(storeContoller.DeleteStore)).Methods(http.MethodDelete)
-	r.HandleFunc("/stores/{id}/delete", middleware.JWTMiddleware(storeContoller.SoftDeleteStore)).Methods(http.MethodDelete)
-	r.HandleFunc("/stores/{id}/restore", middleware.JWTMiddleware(storeContoller.RestoreDeletedStore)).Methods(http.MethodPut)
-	r.HandleFunc("/stores/{id}", middleware.JWTMiddleware(storeContoller.UpdateStore)).Methods(http.MethodPut)
+	r.HandleFunc("/stores", middleware.JWTMiddleware(storeContoller.CreateStore, "buyer", "seller")).Methods(http.MethodPost)
+	r.HandleFunc("/stores/delete/{id}", middleware.JWTMiddleware(storeContoller.DeleteStore, "admin")).Methods(http.MethodDelete)
+	r.HandleFunc("/stores/{id}/delete", middleware.JWTMiddleware(storeContoller.SoftDeleteStore, "seller")).Methods(http.MethodDelete)
+	r.HandleFunc("/stores/{id}/restore", middleware.JWTMiddleware(storeContoller.RestoreDeletedStore, "admin")).Methods(http.MethodPut)
+	r.HandleFunc("/stores/{id}", middleware.JWTMiddleware(storeContoller.UpdateStore, "seller")).Methods(http.MethodPut)
 
 	// ===================== Router Product =======================
-	r.HandleFunc("/products/search", productController.GetProducts).Methods(http.MethodGet)                                           // get all sales & soldout product data
-	r.HandleFunc("/products/{id}", productController.GetProductbyId).Methods(http.MethodGet)                                          // get product data by id
-	r.HandleFunc("/products/delete/{id}", middleware.JWTMiddleware(productController.DeleteProduct)).Methods(http.MethodDelete)       // soft delete product data by id
-	r.HandleFunc("/products/{id}/restore", middleware.JWTMiddleware(productController.RestoreDeletedProduct)).Methods(http.MethodPut) // restore deleted product data by id
-	r.HandleFunc("/products/{id}/delete", middleware.JWTMiddleware(productController.SoftDeleteProduct)).Methods(http.MethodDelete)   // hard delete product data by id
-	r.HandleFunc("/products", middleware.JWTMiddleware(productController.InsertProduct)).Methods(http.MethodPost)                     // create new product data
-	r.HandleFunc("/products/{id}", middleware.JWTMiddleware(productController.UpdateProduct)).Methods(http.MethodPut)                 // update product data by id
+	r.HandleFunc("/products", productController.GetProducts).Methods(http.MethodGet)                                                           // get all sales & soldout product data
+	r.HandleFunc("/products/{id}", productController.GetProductbyId).Methods(http.MethodGet)                                                   // get product data by id
+	r.HandleFunc("/products/delete/{id}", middleware.JWTMiddleware(productController.DeleteProduct, "admin")).Methods(http.MethodDelete)       // soft delete product data by id
+	r.HandleFunc("/products/{id}/restore", middleware.JWTMiddleware(productController.RestoreDeletedProduct, "admin")).Methods(http.MethodPut) // restore deleted product data by id
+	r.HandleFunc("/products/{id}/delete", middleware.JWTMiddleware(productController.SoftDeleteProduct, "seller")).Methods(http.MethodDelete)  // hard delete product data by id
+	r.HandleFunc("/products", middleware.JWTMiddleware(productController.InsertProduct, "seller")).Methods(http.MethodPost)                    // create new product data
+	r.HandleFunc("/products/{id}", middleware.JWTMiddleware(productController.UpdateProduct, "seller")).Methods(http.MethodPut)                // update product data by id
 
 	// ==================== Router Category ====================
 	r.HandleFunc("/categories", categoryController.GetAllCategories).Methods(http.MethodGet)
 	r.HandleFunc("/categories/{id}", categoryController.GetCategoryById).Methods(http.MethodGet)
-	r.HandleFunc("/categories", categoryController.InsertCategory).Methods(http.MethodPost)
-	r.HandleFunc("/categories/{id}", categoryController.UpdateCategory).Methods(http.MethodPut)
-	r.HandleFunc("/categories/{id}", categoryController.DeleteCategory).Methods(http.MethodDelete)
+	r.HandleFunc("/categories", middleware.JWTMiddleware(categoryController.InsertCategory, "admin")).Methods(http.MethodPost)
+	r.HandleFunc("/categories/{id}", middleware.JWTMiddleware(categoryController.UpdateCategory, "admin")).Methods(http.MethodPut)
+	r.HandleFunc("/categories/{id}", middleware.JWTMiddleware(categoryController.DeleteCategory, "admin")).Methods(http.MethodDelete)
 
 	// ==================== Router Cart ====================
 	r.HandleFunc("/carts", middleware.JWTMiddleware(cartController.GetCartByUserId)).Methods(http.MethodGet)

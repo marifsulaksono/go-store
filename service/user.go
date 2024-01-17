@@ -3,8 +3,8 @@ package service
 import (
 	"context"
 	"gostore/entity"
+	"gostore/helper"
 	userError "gostore/helper/domain/errorModel"
-	"gostore/middleware"
 	"gostore/repo"
 	"regexp"
 	"strings"
@@ -91,7 +91,7 @@ func (u *userService) CreateUser(ctx context.Context, user *entity.User) error {
 func (u *userService) UpdateUser(ctx context.Context, user *entity.User) error {
 	var (
 		detailError = make(map[string]any)
-		id          = ctx.Value(middleware.GOSTORE_USERID).(int)
+		id          = ctx.Value(helper.GOSTORE_USERID).(int)
 	)
 
 	if user.Name == "" {
@@ -129,7 +129,7 @@ func (u *userService) UpdateUser(ctx context.Context, user *entity.User) error {
 func (u *userService) ChangePasswordUser(ctx context.Context, userChange entity.UserChangePassword) error {
 	var (
 		detailError = make(map[string]any)
-		userId      = ctx.Value(middleware.GOSTORE_USERID).(int)
+		userId      = ctx.Value(helper.GOSTORE_USERID).(int)
 	)
 
 	if userChange.OldPassword == "" {
@@ -169,7 +169,7 @@ func (u *userService) ChangePasswordUser(ctx context.Context, userChange entity.
 }
 
 func (u *userService) DeleteUser(ctx context.Context) error {
-	id := ctx.Value(middleware.GOSTORE_USERID).(int)
+	id := ctx.Value(helper.GOSTORE_USERID).(int)
 	checkUser, err := u.Repo.GetUser(ctx, id, "")
 	if err != nil {
 		return err
