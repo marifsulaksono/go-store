@@ -10,7 +10,7 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
-func JWTMiddleware(next http.HandlerFunc, allowedRole ...string) http.HandlerFunc {
+func JWTMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
@@ -19,8 +19,8 @@ func JWTMiddleware(next http.HandlerFunc, allowedRole ...string) http.HandlerFun
 			return
 		}
 
-		tokenString := helper.GetTokenFromHeader(w, r)
-		if tokenString == "" {
+		tokenString, ok := helper.GetTokenFromHeader(w, r)
+		if !ok {
 			response.BuildErorResponse(w, middleError.ErrInvalidToken)
 			return
 		}
@@ -31,9 +31,6 @@ func JWTMiddleware(next http.HandlerFunc, allowedRole ...string) http.HandlerFun
 			switch v.Errors {
 			case jwt.ValidationErrorExpired:
 				response.BuildErorResponse(w, middleError.ErrExpToken)
-				return
-			case jwt.ValidationErrorSignatureInvalid:
-				response.BuildErorResponse(w, middleError.ErrUnauthorized)
 				return
 			default:
 				response.BuildErorResponse(w, middleError.ErrUnauthorized)
@@ -50,14 +47,6 @@ func JWTMiddleware(next http.HandlerFunc, allowedRole ...string) http.HandlerFun
 		if !ok {
 			response.BuildErorResponse(w, middleError.ErrInvalidToken)
 			return
-		}
-
-		if len(allowedRole) > 0 {
-			allow := helper.RoleBasedAccessControl(r, allowedRole...)
-			if !allow {
-				response.BuildErorResponse(w, middleError.ErrNotAllowed)
-				return
-			}
 		}
 
 		ctx = context.WithValue(ctx, helper.GOSTORE_USERID, payload.Id)

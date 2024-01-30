@@ -14,7 +14,7 @@ var (
 	ErrUnauthorized = response.MyErr{
 		Status:    http.StatusUnauthorized,
 		ErrorCode: "INVALID_AUTHORIZE",
-		Message:   "Need valid authorization",
+		Message:   "Invalid authorization",
 	}
 	ErrExpToken = response.MyErr{
 		Status:    http.StatusUnauthorized,

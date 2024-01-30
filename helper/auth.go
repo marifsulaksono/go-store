@@ -44,13 +44,13 @@ func GenerateToken(user entity.UserResponse) (string, error) {
 	return tokenAlgorithm.SignedString([]byte(os.Getenv("JWT_SECRET_KEY")))
 }
 
-func GetTokenFromHeader(w http.ResponseWriter, r *http.Request) string {
+func GetTokenFromHeader(w http.ResponseWriter, r *http.Request) (string, bool) {
 	authHeader := r.Header.Get("Authorization")
 	if !strings.Contains(authHeader, "Bearer") {
-		return ""
+		return "", false
 	}
 
-	return strings.Replace(authHeader, "Bearer ", "", -1)
+	return strings.Replace(authHeader, "Bearer ", "", -1), true
 }
 
 func ValidateJWT(ts string) (*jwt.Token, error) {
@@ -67,18 +67,4 @@ func ValidateJWT(ts string) (*jwt.Token, error) {
 	})
 
 	return token, err
-}
-
-func RoleBasedAccessControl(r *http.Request, allowedRole ...string) bool {
-	role := r.Context().Value(GOSTORE_USERROLE)
-	allow := false
-
-	for _, allowed := range allowedRole {
-		if role == allowed {
-			allow = true
-			break
-		}
-	}
-
-	return allow
 }
