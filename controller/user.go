@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"gostore/entity"
-	"gostore/helper"
-	userError "gostore/helper/domain/errorModel"
-	"gostore/helper/response"
 	"gostore/service"
+	"gostore/utils/helper"
+	userError "gostore/utils/helper/domain/errorModel"
+	"gostore/utils/response"
 	"net/http"
 
 	"golang.org/x/crypto/bcrypt"
@@ -83,7 +83,7 @@ func (u *UserController) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	metadata := helper.UserInfo{
+	metadata := response.UserInfo{
 		Username: userLogin.Username,
 		Name:     userLogin.Name,
 		Role:     userLogin.Role,

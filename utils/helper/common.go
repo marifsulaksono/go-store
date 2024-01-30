@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	responseEror "gostore/helper/response"
+	"gostore/utils/response"
 
 	"github.com/gorilla/mux"
 	"gorm.io/gorm"
@@ -15,7 +15,7 @@ func ParamIdChecker(w http.ResponseWriter, r *http.Request) (int, error) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		return 0, responseEror.ErrInvalidParamId
+		return 0, response.ErrInvalidParamId
 	}
 	return id, nil
 }

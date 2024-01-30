@@ -4,9 +4,9 @@ import (
 	"context"
 	_ "errors"
 	"gostore/entity"
-	"gostore/helper"
-	storeError "gostore/helper/domain/errorModel"
 	"gostore/repo"
+	"gostore/utils/helper"
+	storeError "gostore/utils/helper/domain/errorModel"
 	"strings"
 	"time"
 )

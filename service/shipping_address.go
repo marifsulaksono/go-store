@@ -3,9 +3,9 @@ package service
 import (
 	"context"
 	"gostore/entity"
-	"gostore/helper"
-	saError "gostore/helper/domain/errorModel"
 	"gostore/repo"
+	"gostore/utils/helper"
+	saError "gostore/utils/helper/domain/errorModel"
 )
 
 type shippingAddressService struct {

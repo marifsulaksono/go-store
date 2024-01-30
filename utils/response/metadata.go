@@ -1,4 +1,4 @@
-package helper
+package response
 
 type Page struct {
 	Limit     int `json:"limit,omitempty"`

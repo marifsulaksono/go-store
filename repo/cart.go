@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"gostore/entity"
-	"gostore/helper"
-	cartError "gostore/helper/domain/errorModel"
+	"gostore/utils/helper"
+	cartError "gostore/utils/helper/domain/errorModel"
 
 	"gorm.io/gorm"
 )

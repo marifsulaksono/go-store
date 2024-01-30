@@ -7,12 +7,13 @@ import (
 )
 
 type Transaction struct {
-	Id                int               `gorm:"primaryKey,autoIncrement" json:"id"`
+	Id                string            `gorm:"primaryKey" json:"id"`
 	Date              time.Time         `gorm:"not null" json:"date"`
 	Total             int               `gorm:"not null" json:"total"`
 	Status            string            `gorm:"not null" json:"status"`
 	ShippingAddressId *int              `gorm:"not null" json:"shipping_address_id"`
 	ShippingAddress   ShippingAddress   `gorm:"-:migration" json:"shipping_address"`
+	PaymentUrl        string            `json:"payment_url"`
 	UserId            int               `gorm:"not null" json:"-"`
 	Items             []TransactionItem `json:"items" gorm:"-:migration;foreignKey:TransactionId;references:Id"`
 	DeleteAt          gorm.DeletedAt    `json:"-"`
@@ -29,7 +30,7 @@ type TransactionItem struct {
 }
 
 type AllTransactionResponse struct {
-	Id       int                          `json:"id"`
+	Id       string                       `json:"id"`
 	Date     time.Time                    `json:"date"`
 	Total    int                          `json:"total"`
 	Status   string                       `json:"status"`

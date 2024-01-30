@@ -2,9 +2,9 @@ package middleware
 
 import (
 	"context"
-	"gostore/helper"
-	middleError "gostore/helper/domain/errorModel"
-	"gostore/helper/response"
+	"gostore/utils/helper"
+	middleError "gostore/utils/helper/domain/errorModel"
+	"gostore/utils/response"
 	"net/http"
 
 	"github.com/golang-jwt/jwt/v4"

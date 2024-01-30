@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"gostore/entity"
-	"gostore/helper"
-	productError "gostore/helper/domain/errorModel"
 	"gostore/repo"
+	productError "gostore/utils/helper/domain/errorModel"
+	"gostore/utils/response"
 )
 
 type productService struct {
@@ -14,7 +14,7 @@ type productService struct {
 }
 
 type ProductService interface {
-	GetAllProducts(ctx context.Context, keyword, status, order, sortBy string, minPrice, maxPrice, categoryId, storeId, limit, page int) ([]entity.Product, helper.Page, error)
+	GetAllProducts(ctx context.Context, keyword, status, order, sortBy string, minPrice, maxPrice, categoryId, storeId, limit, page int) ([]entity.Product, response.Page, error)
 	GetProductbyId(ctx context.Context, id int) (entity.Product, error)
 	InsertProduct(ctx context.Context, product *entity.Product) error
 	UpdateProduct(ctx context.Context, id int, product *entity.Product) error
@@ -30,7 +30,7 @@ func NewProductService(r repo.ProductRepository) ProductService {
 }
 
 func (p *productService) GetAllProducts(ctx context.Context, keyword, status, order, sortBy string,
-	minPrice, maxPrice, categoryId, storeId, limit, page int) ([]entity.Product, helper.Page, error) {
+	minPrice, maxPrice, categoryId, storeId, limit, page int) ([]entity.Product, response.Page, error) {
 	var (
 		totalPage int
 	)
@@ -60,7 +60,7 @@ func (p *productService) GetAllProducts(ctx context.Context, keyword, status, or
 
 	result, count, err := p.Repo.GetAllProducts(ctx, keyword, status, order, sortBy, minPrice, maxPrice, categoryId, storeId, limit, offset)
 	if err != nil {
-		return []entity.Product{}, helper.Page{}, err
+		return []entity.Product{}, response.Page{}, err
 	}
 
 	if int(count)%limit == 0 {
@@ -69,7 +69,7 @@ func (p *productService) GetAllProducts(ctx context.Context, keyword, status, or
 		totalPage = (int(count) / limit) + 1
 	}
 
-	pagination := helper.Page{
+	pagination := response.Page{
 		Limit:     limit,
 		Total:     int(count),
 		Page:      page,

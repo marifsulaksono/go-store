@@ -1,7 +1,7 @@
 package errorModel
 
 import (
-	"gostore/helper/response"
+	"gostore/utils/response"
 	"net/http"
 )
 

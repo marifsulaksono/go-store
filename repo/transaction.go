@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"gostore/entity"
-	"gostore/helper"
-	transactionError "gostore/helper/domain/errorModel"
+	"gostore/utils/helper"
+	transactionError "gostore/utils/helper/domain/errorModel"
 	"time"
 
 	"gorm.io/gorm"

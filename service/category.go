@@ -3,8 +3,8 @@ package service
 import (
 	"context"
 	"gostore/entity"
-	categoryError "gostore/helper/domain/errorModel"
 	"gostore/repo"
+	categoryError "gostore/utils/helper/domain/errorModel"
 )
 
 type categoryService struct {

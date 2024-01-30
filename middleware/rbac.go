@@ -1,9 +1,9 @@
 package middleware
 
 import (
-	"gostore/helper"
-	middleError "gostore/helper/domain/errorModel"
-	"gostore/helper/response"
+	"gostore/utils/helper"
+	middleError "gostore/utils/helper/domain/errorModel"
+	"gostore/utils/response"
 	"net/http"
 )
 
