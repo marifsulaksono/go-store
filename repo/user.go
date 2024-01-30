@@ -19,6 +19,7 @@ type UserRepository interface {
 	CreateUser(ctx context.Context, user *entity.User) error
 	UpdateUser(ctx context.Context, id int, user *entity.User) error
 	ChangePasswordUser(ctx context.Context, id int, password string) error
+	ChangeUserRole(ctx context.Context, id int, role string) error
 	DeleteUser(ctx context.Context, id int) error
 }
 
@@ -66,6 +67,10 @@ func (u *userRepository) UpdateUser(ctx context.Context, id int, user *entity.Us
 
 func (u *userRepository) ChangePasswordUser(ctx context.Context, id int, password string) error {
 	return u.DB.Model(entity.User{}).Where("id = ?", id).Update("password", password).Error
+}
+
+func (u *userRepository) ChangeUserRole(ctx context.Context, id int, role string) error {
+	return u.DB.Model(entity.User{}).Where("id = ?", id).Update("role", role).Error
 }
 
 func (u *userRepository) DeleteUser(ctx context.Context, id int) error {

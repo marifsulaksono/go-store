@@ -24,7 +24,7 @@ func routeInit(conn *gorm.DB) *mux.Router {
 	userService := service.NewUserService(userRepo)
 	saService := service.NewShippingAddressService(saRepo)
 	categoryService := service.NewCategoryService(categoryRepo)
-	storeService := service.NewStoreService(storeRepo, productRepo)
+	storeService := service.NewStoreService(storeRepo, productRepo, userRepo)
 	productService := service.NewProductService(productRepo)
 	cartService := service.NewCartService(cartRepo, productRepo)
 	trService := service.NewTransactionService(trRepo, saRepo)

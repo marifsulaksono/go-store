@@ -14,6 +14,7 @@ import (
 type storeService struct {
 	Repo        repo.StoreRepository
 	ProductRepo repo.ProductRepository
+	UserRepo    repo.UserRepository
 }
 
 type StoreService interface {
@@ -26,10 +27,11 @@ type StoreService interface {
 	DeleteStore(ctx context.Context, id int) error
 }
 
-func NewStoreService(r repo.StoreRepository, p repo.ProductRepository) StoreService {
+func NewStoreService(r repo.StoreRepository, p repo.ProductRepository, u repo.UserRepository) StoreService {
 	return &storeService{
 		Repo:        r,
 		ProductRepo: p,
+		UserRepo:    u,
 	}
 }
 
@@ -75,6 +77,12 @@ func (s *storeService) CreateStore(ctx context.Context, store *entity.Store) err
 		}
 		return err
 	}
+
+	err = s.UserRepo.ChangeUserRole(ctx, userId, "seller")
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
