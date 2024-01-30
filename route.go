@@ -41,6 +41,8 @@ func routeInit(conn *gorm.DB) *mux.Router {
 
 	r := mux.NewRouter()
 
+	r.Use(middleware.LoggerMiddleware)
+
 	// ===================== Router User ======================
 	r.HandleFunc("/register", userController.Register).Methods(http.MethodPost)
 	r.HandleFunc("/login", userController.Login).Methods(http.MethodPost)
