@@ -21,7 +21,7 @@ type Transaction struct {
 
 type TransactionItem struct {
 	Id            int                        `gorm:"primaryKey,autoIncrement" json:"id"`
-	TransactionId int                        `gorm:"not null" json:"-"`
+	TransactionId string                     `gorm:"not null" json:"-"`
 	ProductId     *int                       `gorm:"not null" json:"product_id"`
 	Product       ProductTransactionResponse `gorm:"-:migration" json:"items"`
 	Qty           *int                       `gorm:"not null" json:"qty"`
@@ -40,7 +40,7 @@ type AllTransactionResponse struct {
 
 type AllTransactionItemResponse struct {
 	Id            int                        `json:"id"`
-	TransactionId int                        `json:"-"`
+	TransactionId string                     `json:"-"`
 	ProductId     int                        `json:"product_id"`
 	Product       ProductTransactionResponse `gorm:"foreignKey:ProductId" json:"product"`
 	Subtotal      int                        `json:"subtotal"`

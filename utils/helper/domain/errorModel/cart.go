@@ -14,16 +14,21 @@ var (
 	ErrCantAddToCart = response.MyErr{
 		Status:    http.StatusBadRequest,
 		ErrorCode: "INVALID_ADD_CART",
-		Message:   "cannot add your product's store to your cart",
+		Message:   "Cannot add your product's store to your cart",
 	}
 	ErrStockProductNotEnough = response.MyErr{
 		Status:    http.StatusBadRequest,
 		ErrorCode: "STOCK_NOT_ENOUGH",
-		Message:   "stock product isn't enough",
+		Message:   "Stock product isn't enough",
 	}
 	ErrCartInput = response.MyErr{
 		Status:    http.StatusBadRequest,
 		ErrorCode: "INVALID_CART_INPUT",
 		Message:   "Some required input is missing",
+	}
+	ErrGeneratePayment = response.MyErr{
+		Status:    http.StatusInternalServerError,
+		ErrorCode: "ERROR_GENERATE_PAYMENT",
+		Message:   "Error when generating payment, please contact service",
 	}
 )

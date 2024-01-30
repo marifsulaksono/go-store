@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"gostore/entity"
+	"gostore/utils"
 	"gostore/utils/helper"
 	transactionError "gostore/utils/helper/domain/errorModel"
 	"time"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -19,7 +21,7 @@ type transactionRepository struct {
 // TransactionRepository: represent the transactionRepository contract
 type TransactionRepository interface {
 	GetTransactions(ctx context.Context) ([]entity.AllTransactionResponse, error)
-	GetTransactionById(ctx context.Context, id int) (entity.Transaction, error)
+	GetTransactionById(ctx context.Context, id string) (entity.Transaction, error)
 	CreateTransaction(ctx context.Context, transaction *entity.Transaction) error
 }
 
@@ -40,7 +42,7 @@ func (tr *transactionRepository) GetTransactions(ctx context.Context) ([]entity.
 	return result, err
 }
 
-func (tr *transactionRepository) GetTransactionById(ctx context.Context, id int) (entity.Transaction, error) {
+func (tr *transactionRepository) GetTransactionById(ctx context.Context, id string) (entity.Transaction, error) {
 	var result entity.Transaction
 	err := tr.DB.Where("id = ?", id).Preload("Items.Product.Store").Preload("ShippingAddress").First(&result).Error
 	if err != nil {
@@ -63,6 +65,8 @@ func (tr *transactionRepository) CreateTransaction(ctx context.Context, items *e
 
 	// begin the database transaction for ACID (atomicity, Consistency, Isolation, Durability)
 	tx := tr.DB.Begin()
+	transaction.Id = uuid.New().String()
+	var itemDetails []entity.ItemDetails
 
 	// validation and update stock, sold, status selected product
 	for i, trItem := range items.Items {
@@ -118,6 +122,22 @@ func (tr *transactionRepository) CreateTransaction(ctx context.Context, items *e
 				return err
 			}
 		}
+
+		item := entity.ItemDetails{
+			Id:           fmt.Sprintln(trItem.ProductId),
+			Name:         product.Name,
+			Price:        *product.Price,
+			Qty:          *trItem.Qty,
+			MerchantName: product.Store.NameStore,
+		}
+
+		itemDetails = append(itemDetails, item)
+	}
+
+	var user entity.UserResponse
+	if err := tx.Where("id = ?", userId).First(&user).Error; err != nil {
+		tx.Rollback()
+		return err
 	}
 
 	// default transaction property
@@ -128,8 +148,15 @@ func (tr *transactionRepository) CreateTransaction(ctx context.Context, items *e
 	transaction.UserId = userId
 	transaction.Items = items.Items
 
-	err := tx.Create(&transaction).Error
+	paymentUrl, err := utils.PaymentGenerator(ctx, transaction, user, itemDetails)
 	if err != nil {
+		tx.Rollback()
+		return transactionError.ErrGeneratePayment
+	}
+
+	transaction.PaymentUrl = paymentUrl
+
+	if err := tx.Create(&transaction).Error; err != nil {
 		tx.Rollback()
 		return err
 	}

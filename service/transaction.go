@@ -15,7 +15,7 @@ type transactionService struct {
 
 type TransactionService interface {
 	GetTransactions(ctx context.Context) ([]entity.AllTransactionResponse, error)
-	GetTransactionById(ctx context.Context, id int) (entity.Transaction, error)
+	GetTransactionById(ctx context.Context, id string) (entity.Transaction, error)
 	CreateTransaction(ctx context.Context, items *entity.Transaction) error
 }
 
@@ -30,7 +30,7 @@ func (tr *transactionService) GetTransactions(ctx context.Context) ([]entity.All
 	return tr.Repo.GetTransactions(ctx)
 }
 
-func (tr *transactionService) GetTransactionById(ctx context.Context, id int) (entity.Transaction, error) {
+func (tr *transactionService) GetTransactionById(ctx context.Context, id string) (entity.Transaction, error) {
 	return tr.Repo.GetTransactionById(ctx, id)
 }
 

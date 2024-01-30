@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"gostore/entity"
 	"gostore/service"
-	"gostore/utils/helper"
 	"gostore/utils/response"
 	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
 type TransactionController struct {
@@ -40,11 +41,8 @@ func (tr *TransactionController) GetTransactions(w http.ResponseWriter, r *http.
 
 func (tr *TransactionController) GetTransactionById(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	id, err := helper.ParamIdChecker(w, r)
-	if err != nil {
-		response.BuildErorResponse(w, err)
-		return
-	}
+	vars := mux.Vars(r)
+	id := vars["id"]
 
 	result, err := tr.Service.GetTransactionById(ctx, id)
 	if err != nil {
