@@ -22,7 +22,7 @@ type transactionRepository struct {
 type TransactionRepository interface {
 	GetTransactions(ctx context.Context) ([]entity.AllTransactionResponse, error)
 	GetTransactionById(ctx context.Context, id string) (entity.Transaction, error)
-	CreateTransaction(ctx context.Context, transaction *entity.Transaction) error
+	CreateTransaction(ctx context.Context, transaction *entity.Transaction, userId int) (entity.Transaction, error)
 }
 
 // return new transaction repository with property value
@@ -55,11 +55,10 @@ func (tr *transactionRepository) GetTransactionById(ctx context.Context, id stri
 	return result, nil
 }
 
-func (tr *transactionRepository) CreateTransaction(ctx context.Context, items *entity.Transaction) error {
+func (tr *transactionRepository) CreateTransaction(ctx context.Context, items *entity.Transaction, userId int) (entity.Transaction, error) {
 	var (
 		transaction entity.Transaction
 		total       int
-		userId      = ctx.Value(helper.GOSTORE_USERID).(int)
 		detailError = make(map[string]any)
 	)
 
@@ -80,7 +79,7 @@ func (tr *transactionRepository) CreateTransaction(ctx context.Context, items *e
 
 		if len(detailError) > 0 {
 			tx.Rollback()
-			return transactionError.ErrTransactionInput.AttachDetail(detailError)
+			return entity.Transaction{}, transactionError.ErrTransactionInput.AttachDetail(detailError)
 		}
 
 		// check product available
@@ -89,14 +88,14 @@ func (tr *transactionRepository) CreateTransaction(ctx context.Context, items *e
 		if err != nil {
 			tx.Rollback()
 			detailError["item"] = fmt.Sprintf("Product %d not found", *trItem.ProductId)
-			return transactionError.ErrProductNotFound.AttachDetail(detailError)
+			return entity.Transaction{}, transactionError.ErrProductNotFound.AttachDetail(detailError)
 		} else if product.Store.UserId == userId {
 			// can't add user's product to transaction
 			tx.Rollback()
-			return transactionError.ErrCantAddToTrx
+			return entity.Transaction{}, transactionError.ErrCantAddToTrx
 		} else if *product.Stock < *trItem.Qty {
 			tx.Rollback()
-			return transactionError.ErrStockProductNotEnough
+			return entity.Transaction{}, transactionError.ErrStockProductNotEnough
 		}
 
 		*product.Stock -= *trItem.Qty
@@ -111,7 +110,7 @@ func (tr *transactionRepository) CreateTransaction(ctx context.Context, items *e
 			*trItem.ProductId).Updates(product).Error
 		if err != nil {
 			tx.Rollback()
-			return err
+			return entity.Transaction{}, err
 		}
 
 		if *product.Stock == 0 {
@@ -119,7 +118,7 @@ func (tr *transactionRepository) CreateTransaction(ctx context.Context, items *e
 			err := tx.Model(&entity.Product{}).Where("id = ?", *trItem.ProductId).Update("status", "soldout").Error
 			if err != nil {
 				tx.Rollback()
-				return err
+				return entity.Transaction{}, err
 			}
 		}
 
@@ -137,7 +136,7 @@ func (tr *transactionRepository) CreateTransaction(ctx context.Context, items *e
 	var user entity.UserResponse
 	if err := tx.Where("id = ?", userId).First(&user).Error; err != nil {
 		tx.Rollback()
-		return err
+		return entity.Transaction{}, err
 	}
 
 	// default transaction property
@@ -151,15 +150,15 @@ func (tr *transactionRepository) CreateTransaction(ctx context.Context, items *e
 	paymentUrl, err := utils.PaymentGenerator(ctx, transaction, user, itemDetails)
 	if err != nil {
 		tx.Rollback()
-		return transactionError.ErrGeneratePayment
+		return entity.Transaction{}, transactionError.ErrGeneratePayment
 	}
 
 	transaction.PaymentUrl = paymentUrl
 
 	if err := tx.Create(&transaction).Error; err != nil {
 		tx.Rollback()
-		return err
+		return entity.Transaction{}, err
 	}
 
-	return tx.Commit().Error
+	return transaction, tx.Commit().Error
 }

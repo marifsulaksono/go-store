@@ -20,6 +20,7 @@ func routeInit(conn *gorm.DB) *mux.Router {
 	productRepo := repo.NewProductRepository(conn)
 	cartRepo := repo.NewCartRepository(conn)
 	trRepo := repo.NewTransactionRepository(conn)
+	notifRepo := repo.NewNotificationRepository(conn)
 
 	userService := service.NewUserService(userRepo)
 	saService := service.NewShippingAddressService(saRepo)
@@ -27,7 +28,8 @@ func routeInit(conn *gorm.DB) *mux.Router {
 	storeService := service.NewStoreService(storeRepo, productRepo, userRepo)
 	productService := service.NewProductService(productRepo)
 	cartService := service.NewCartService(cartRepo, productRepo)
-	trService := service.NewTransactionService(trRepo, saRepo)
+	trService := service.NewTransactionService(trRepo, saRepo, notifRepo)
+	notifService := service.NewNotificationService(notifRepo)
 
 	userController := controller.NewUserController(userService)
 	saController := controller.NewShippingAddressController(saService)
@@ -36,6 +38,7 @@ func routeInit(conn *gorm.DB) *mux.Router {
 	productController := controller.NewProductController(productService)
 	cartController := controller.NewCartController(cartService)
 	trController := controller.NewTransactionController(trService)
+	notifController := controller.NewNotificationController(notifService)
 
 	// ============== Initialize Route ============
 
@@ -92,6 +95,9 @@ func routeInit(conn *gorm.DB) *mux.Router {
 	r.HandleFunc("/transactions", middleware.JWTMiddleware(trController.GetTransactions)).Methods(http.MethodGet)
 	r.HandleFunc("/transactions/{id}", middleware.JWTMiddleware(trController.GetTransactionById)).Methods(http.MethodGet)
 	r.HandleFunc("/transactions", middleware.JWTMiddleware(trController.CreateTransaction)).Methods(http.MethodPost)
+
+	// ==================== Router Notification ====================
+	r.HandleFunc("/notifications", middleware.JWTMiddleware(notifController.GetAllNotifications)).Methods(http.MethodGet)
 
 	return r
 }

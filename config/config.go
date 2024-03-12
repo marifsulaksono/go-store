@@ -40,6 +40,8 @@ func AutoMigrate(db *gorm.DB) {
 		&entity.Cart{},
 		&entity.Transaction{},
 		&entity.TransactionItem{},
+		&entity.Notification{},
+		&entity.NotificationCategory{},
 	)
 
 	if err != nil {

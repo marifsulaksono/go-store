@@ -9,8 +9,9 @@ import (
 )
 
 type transactionService struct {
-	Repo   repo.TransactionRepository
-	SARepo repo.ShippingAddressRepo
+	Repo      repo.TransactionRepository
+	SARepo    repo.ShippingAddressRepo
+	NotifRepo repo.NotificationRepository
 }
 
 type TransactionService interface {
@@ -19,10 +20,11 @@ type TransactionService interface {
 	CreateTransaction(ctx context.Context, items *entity.Transaction) error
 }
 
-func NewTransactionService(r repo.TransactionRepository, sa repo.ShippingAddressRepo) TransactionService {
+func NewTransactionService(r repo.TransactionRepository, sa repo.ShippingAddressRepo, n repo.NotificationRepository) TransactionService {
 	return &transactionService{
-		Repo:   r,
-		SARepo: sa,
+		Repo:      r,
+		SARepo:    sa,
+		NotifRepo: n,
 	}
 }
 
@@ -35,17 +37,37 @@ func (tr *transactionService) GetTransactionById(ctx context.Context, id string)
 }
 
 func (tr *transactionService) CreateTransaction(ctx context.Context, items *entity.Transaction) error {
+	userId := ctx.Value(helper.GOSTORE_USERID).(int)
+
 	if items.ShippingAddressId == nil {
 		detailError := map[string]any{"shipping_address_id": "this field is missing input"}
 		return transactionError.ErrTransactionInput.AttachDetail(detailError)
 	}
 
 	checkSA, err := tr.SARepo.GetShippingAddressById(ctx, *items.ShippingAddressId)
-	if checkSA.UserId != ctx.Value(helper.GOSTORE_USERID).(int) {
+	if checkSA.UserId != userId {
 		return transactionError.ErrInvalidSA
 	} else if err != nil {
 		return err
 	}
 
-	return tr.Repo.CreateTransaction(ctx, items)
+	transaction, err := tr.Repo.CreateTransaction(ctx, items, userId)
+	if err != nil {
+		return err
+	}
+
+	notif := entity.Notification{
+		Title:                  "Transaksi kamu berhasil dibuat!",
+		Detail:                 "Hai, transaksi kamu berhasil dibuat, jangan lupa untuk membayarnya ya, klik untuk lebih lanjut. ",
+		NotificationCategoryId: 1,
+		RedirectUrl:            transaction.PaymentUrl,
+		UserId:                 userId,
+	}
+
+	err = tr.NotifRepo.InsertNotification(&notif)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
