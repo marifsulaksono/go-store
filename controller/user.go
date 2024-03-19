@@ -6,10 +6,14 @@ import (
 	"gostore/entity"
 	"gostore/service"
 	"gostore/utils/helper"
+	"gostore/utils/helper/domain"
 	userError "gostore/utils/helper/domain/errorModel"
 	"gostore/utils/response"
 	"net/http"
+	"net/url"
+	"strings"
 
+	"github.com/gorilla/mux"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -45,51 +49,72 @@ func (u *UserController) Register(w http.ResponseWriter, r *http.Request) {
 	response.BuildSuccesResponse(w, nil, nil, "Register success")
 }
 
-func (u *UserController) Login(w http.ResponseWriter, r *http.Request) {
+func (u *UserController) LoginAuth(w http.ResponseWriter, r *http.Request) {
 	var (
 		ctx = r.Context()
 	)
 
-	// Basic Authentication
-	username, password, ok := r.BasicAuth()
-	if !ok {
-		response.BuildErorResponse(w, userError.ErrLogin)
-		fmt.Println("BasicAuth required")
-		return
-	}
+	auth := mux.Vars(r)["auth"]
+	if auth == "google" {
+		// Google OAuth
+		URL, err := url.Parse(domain.OAuthGoogleConf.Endpoint.AuthURL)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
-	// Check user validation on database
-	var userLogin entity.UserResponse
-	userLogin, err := u.Service.GetUser(ctx, 0, username)
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		// set required parameters
+		parameters := url.Values{}
+		parameters.Add("client_id", domain.OAuthGoogleConf.ClientID)
+		parameters.Add("scope", strings.Join(domain.OAuthGoogleConf.Scopes, " "))
+		parameters.Add("redirect_uri", domain.OAuthGoogleConf.RedirectURL)
+		parameters.Add("response_type", "code")
+		parameters.Add("state", domain.OAuthStateString)
+		URL.RawQuery = parameters.Encode()
+		url := URL.String()
+		http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+	} else if auth == "" {
+		// Basic Authentication
+		username, password, ok := r.BasicAuth()
+		if !ok {
+			response.BuildErorResponse(w, userError.ErrLogin)
+			fmt.Println("BasicAuth required")
+			return
+		}
+
+		// Check user validation on database
+		var userLogin entity.UserResponse
+		userLogin, err := u.Service.GetUser(ctx, 0, username)
+		if err != nil {
+			if err == gorm.ErrRecordNotFound {
+				response.BuildErorResponse(w, userError.ErrLogin)
+				return
+			} else {
+				response.BuildErorResponse(w, err)
+				return
+			}
+		}
+
+		// Check password validation
+		if err := bcrypt.CompareHashAndPassword([]byte(userLogin.Password), []byte(password)); err != nil {
 			response.BuildErorResponse(w, userError.ErrLogin)
 			return
-		} else {
+		}
+
+		token, err := helper.GenerateToken(userLogin)
+		if err != nil {
 			response.BuildErorResponse(w, err)
 			return
 		}
-	}
 
-	// Check password validation
-	if err := bcrypt.CompareHashAndPassword([]byte(userLogin.Password), []byte(password)); err != nil {
-		response.BuildErorResponse(w, userError.ErrLogin)
-		return
-	}
+		metadata := response.UserInfo{
+			Username: userLogin.Username,
+			Name:     userLogin.Name,
+			Role:     userLogin.Role,
+		}
 
-	token, err := helper.GenerateToken(userLogin)
-	if err != nil {
-		response.BuildErorResponse(w, err)
-		return
+		response.BuildSuccesResponse(w, token, metadata, "Login success")
 	}
-
-	metadata := response.UserInfo{
-		Username: userLogin.Username,
-		Name:     userLogin.Name,
-		Role:     userLogin.Role,
-	}
-
-	response.BuildSuccesResponse(w, token, metadata, "Login success")
 }
 
 func (u *UserController) GetUserById(w http.ResponseWriter, r *http.Request) {

@@ -44,3 +44,12 @@ func (ProductTransactionResponse) TableName() string {
 func (ProductResponse) TableName() string {
 	return "products"
 }
+
+// {
+// 	"name": "Batik Jawa",
+//  "stock": 70,
+//  "price": 72000,
+//  "desc": "Baju batik dengan berbagai gambar yang bernuasa jawa",
+// 	"category_id": 2,
+// 	"store_id" 1
+// }
