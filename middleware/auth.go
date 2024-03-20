@@ -51,6 +51,7 @@ func JWTMiddleware(next http.HandlerFunc) http.HandlerFunc {
 
 		ctx = context.WithValue(ctx, helper.GOSTORE_USERID, payload.Id)
 		ctx = context.WithValue(ctx, helper.GOSTORE_USERNAME, payload.Username)
+		ctx = context.WithValue(ctx, helper.GOSTORE_USEREMAIL, payload.Email)
 		ctx = context.WithValue(ctx, helper.GOSTORE_USERROLE, payload.Role)
 
 		next.ServeHTTP(w, r.WithContext(ctx))

@@ -4,6 +4,7 @@ import (
 	"context"
 	"gostore/entity"
 	"gostore/repo"
+	"gostore/utils"
 	"gostore/utils/helper"
 	transactionError "gostore/utils/helper/domain/errorModel"
 )
@@ -65,6 +66,11 @@ func (tr *transactionService) CreateTransaction(ctx context.Context, items *enti
 	}
 
 	err = tr.NotifRepo.InsertNotification(&notif)
+	if err != nil {
+		return err
+	}
+
+	err = utils.TransactionMailBuilder(ctx, transaction)
 	if err != nil {
 		return err
 	}

@@ -14,6 +14,7 @@ import (
 type JWTClaim struct {
 	Id       int
 	Username string
+	Email    string
 	Role     string
 	jwt.RegisteredClaims
 }
@@ -21,9 +22,10 @@ type JWTClaim struct {
 type Key string
 
 const (
-	GOSTORE_USERID   Key = "go-store-id"
-	GOSTORE_USERNAME Key = "go-store-user"
-	GOSTORE_USERROLE Key = "go-store-role"
+	GOSTORE_USERID    Key = "user-store-id"
+	GOSTORE_USERNAME  Key = "user-store-user"
+	GOSTORE_USEREMAIL Key = "user-store-email"
+	GOSTORE_USERROLE  Key = "user-store-role"
 )
 
 func GenerateToken(user entity.UserResponse) (string, error) {
@@ -32,6 +34,7 @@ func GenerateToken(user entity.UserResponse) (string, error) {
 	claims := &JWTClaim{
 		Id:       user.Id,
 		Username: user.Username,
+		Email:    user.Email,
 		Role:     user.Role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    "go-store",

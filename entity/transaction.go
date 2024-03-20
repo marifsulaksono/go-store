@@ -30,12 +30,13 @@ type TransactionItem struct {
 }
 
 type AllTransactionResponse struct {
-	Id       string                       `json:"id"`
-	Date     time.Time                    `json:"date"`
-	Total    int                          `json:"total"`
-	Status   string                       `json:"status"`
-	Items    []AllTransactionItemResponse `json:"transaction_items" gorm:"foreignKey:TransactionId;references:Id"`
-	DeleteAt gorm.DeletedAt               `json:"-"`
+	Id         string                       `json:"id"`
+	Date       time.Time                    `json:"date"`
+	Total      int                          `json:"total"`
+	PaymentUrl string                       `json:"payment_url,omitempty"`
+	Status     string                       `json:"status"`
+	Items      []AllTransactionItemResponse `json:"transaction_items" gorm:"foreignKey:TransactionId;references:Id"`
+	DeleteAt   gorm.DeletedAt               `json:"-"`
 }
 
 type AllTransactionItemResponse struct {
