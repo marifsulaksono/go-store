@@ -127,7 +127,7 @@ func (tr *transactionRepository) CreateTransaction(ctx context.Context, items *e
 			Name:         product.Name,
 			Price:        *product.Price,
 			Qty:          *trItem.Qty,
-			MerchantName: product.Store.NameStore,
+			MerchantName: product.Store.Name,
 		}
 
 		itemDetails = append(itemDetails, item)

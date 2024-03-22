@@ -10,8 +10,6 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-// var DB *gorm.DB
-
 func Connect(conf Config) *gorm.DB {
 	newLogger := logger.New(
 		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
@@ -31,5 +29,6 @@ func Connect(conf Config) *gorm.DB {
 	if err != nil {
 		panic("Connection failed!")
 	}
+
 	return DB
 }

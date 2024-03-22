@@ -8,7 +8,7 @@ import (
 
 type Store struct {
 	Id          int            `gorm:"primaryKey,autoIncrement" json:"id"`
-	NameStore   string         `gorm:"not null;size:255" json:"name_store"`
+	Name        string         `gorm:"not null;size:255" json:"name"`
 	Address     string         `gorm:"not null" json:"address"`
 	Email       string         `gorm:"not null" json:"email"`
 	Description string         `json:"desc"`
@@ -20,7 +20,7 @@ type Store struct {
 
 type StoreResponseById struct {
 	Id           int               `json:"id"`
-	NameStore    string            `json:"name_store"`
+	Name         string            `json:"name"`
 	Address      string            `json:"address"`
 	Description  string            `json:"desc"`
 	TotalProduct int               `json:"total_product"`
@@ -30,10 +30,10 @@ type StoreResponseById struct {
 }
 
 type StoreResponse struct {
-	Id        int    `json:"-"`
-	NameStore string `json:"name_store"`
-	Address   string `json:"address"`
-	UserId    int    `json:"-"`
+	Id      int    `json:"id"`
+	Name    string `json:"name"`
+	Address string `json:"address"`
+	UserId  int    `json:"-"`
 }
 
 func (StoreResponseById) TableName() string {

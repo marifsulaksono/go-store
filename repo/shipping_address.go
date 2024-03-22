@@ -16,7 +16,7 @@ type shippingAddressRepo struct {
 
 type ShippingAddressRepo interface {
 	GetShippingAddressById(ctx context.Context, id int) (entity.ShippingAddress, error)
-	GetShippingAddressByUserId(ctx context.Context) ([]entity.ShippingAddress, error)
+	GetShippingAddressByUserId(ctx context.Context, userId int) ([]entity.ShippingAddress, error)
 	InsertShippingAddress(ctx context.Context, sa *entity.ShippingAddress) error
 	UpdateShippingAddress(ctx context.Context, id int, model, sa *entity.ShippingAddress) error
 	DeleteShippingAddress(ctx context.Context, id int) error
@@ -30,20 +30,32 @@ func NewShippingAddressRepo(db *gorm.DB) ShippingAddressRepo {
 
 func (u *shippingAddressRepo) GetShippingAddressById(ctx context.Context, id int) (entity.ShippingAddress, error) {
 	var SA entity.ShippingAddress
-	err := u.DB.Where("id = ?", id).First(&SA).Error
+	err := u.DB.Raw("select * from shipping_addresses where id = ?", id).Scan(&SA).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return entity.ShippingAddress{}, saError.ErrAddressNotFound
 		}
 		return entity.ShippingAddress{}, err
 	}
+
 	return SA, err
 }
 
-func (u *shippingAddressRepo) GetShippingAddressByUserId(ctx context.Context) ([]entity.ShippingAddress, error) {
-	userId := ctx.Value(helper.GOSTORE_USERID).(int)
+func (u *shippingAddressRepo) GetShippingAddressByUserId(ctx context.Context, userId int) ([]entity.ShippingAddress, error) {
 	var SA []entity.ShippingAddress
-	err := u.DB.Where("user_id = ?", userId).Find(&SA).Error
+	rows, err := u.DB.Raw("select * from shipping_addresses where user_id = ?", userId).Rows()
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		err := u.DB.ScanRows(rows, &SA)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return SA, err
 }
 

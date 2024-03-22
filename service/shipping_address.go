@@ -27,7 +27,8 @@ func NewShippingAddressService(repo repo.ShippingAddressRepo) ShippingAddressSer
 }
 
 func (u *shippingAddressService) GetShippingAddressByUserId(ctx context.Context) ([]entity.ShippingAddress, error) {
-	return u.Repo.GetShippingAddressByUserId(ctx)
+	userId := ctx.Value(helper.GOSTORE_USERID).(int)
+	return u.Repo.GetShippingAddressByUserId(ctx, userId)
 }
 
 func (u *shippingAddressService) GetShippingAddressById(ctx context.Context, id int) (entity.ShippingAddress, error) {

@@ -51,7 +51,7 @@ func (s *storeService) CreateStore(ctx context.Context, store *entity.Store) err
 		userId      = ctx.Value(helper.GOSTORE_USERID).(int)
 	)
 
-	if store.NameStore == "" {
+	if store.Name == "" {
 		detailError["name_store"] = "this field is missing input"
 	}
 
@@ -92,7 +92,7 @@ func (s *storeService) UpdateStore(ctx context.Context, id int, store *entity.St
 		userId      = ctx.Value(helper.GOSTORE_USERID).(int)
 	)
 
-	if store.NameStore == "" {
+	if store.Name == "" {
 		detailError["name_store"] = "this field is missing input"
 	}
 

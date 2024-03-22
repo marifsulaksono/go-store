@@ -125,6 +125,7 @@ func (u *UserController) GetUserById(w http.ResponseWriter, r *http.Request) {
 	id, err := helper.ParamIdChecker(w, r)
 	if err != nil {
 		response.BuildErorResponse(w, err)
+		return
 	}
 
 	result, err := u.Service.GetUser(ctx, id, "")

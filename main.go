@@ -18,7 +18,7 @@ func main() {
 
 	conf := config.GetConfig()
 	conn := config.Connect(conf)
-	config.AutoMigrate(conn)
+	// config.AutoMigrate(conn)
 	config.InitGoogleConfig()
 
 	// ==================== Start Server ====================
