@@ -7,8 +7,8 @@ type Page struct {
 	TotalPage int `json:"total_page,omitempty"`
 }
 
-type UserInfo struct {
-	Username string `json:"username,omitempty"`
-	Name     string `json:"name,omitempty"`
-	Role     string `json:"role,omitempty"`
+type LoginInfo struct {
+	Username     string `json:"username,omitempty"`
+	AccessToken  string `json:"access_token,omitempty"`
+	RefreshToken string `json:"refresh_token,omitempty"`
 }

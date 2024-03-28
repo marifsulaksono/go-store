@@ -3,6 +3,7 @@ package entity
 import (
 	"time"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -19,6 +20,11 @@ type User struct {
 	DeleteAt    gorm.DeletedAt `json:"-"`
 }
 
+type Session struct {
+	Id    uuid.UUID `gorm:"primaryKey" json:"id"`
+	Token string    `gorm:"not null" json:"refresh_token"`
+}
+
 type UserResponse struct {
 	Id          int    `json:"id"`
 	Name        string `json:"name"`
@@ -27,6 +33,11 @@ type UserResponse struct {
 	Email       string `json:"email"`
 	Phonenumber string `json:"phonenumber"`
 	Role        string `json:"role"`
+}
+
+type Credential struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 type UserChangePassword struct {

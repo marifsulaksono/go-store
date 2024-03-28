@@ -3,6 +3,7 @@ package helper
 import (
 	"fmt"
 	"gostore/entity"
+	authError "gostore/utils/helper/domain/errorModel"
 	"net/http"
 	"os"
 	"strings"
@@ -28,9 +29,8 @@ const (
 	GOSTORE_USERROLE  Key = "user-store-role"
 )
 
-func GenerateToken(user entity.UserResponse) (string, error) {
+func GenerateToken(user entity.UserResponse, jwtExpTime time.Time) (string, error) {
 	// Create token claim
-	jwtExpTime := time.Now().Add(time.Hour * 24)
 	claims := &JWTClaim{
 		Id:       user.Id,
 		Username: user.Username,
@@ -56,7 +56,7 @@ func GetTokenFromHeader(w http.ResponseWriter, r *http.Request) (string, bool) {
 	return strings.Replace(authHeader, "Bearer ", "", -1), true
 }
 
-func ValidateJWT(ts string) (*jwt.Token, error) {
+func ValidateJWT(ts string) (*JWTClaim, bool, error) {
 	claims := &JWTClaim{}
 
 	token, err := jwt.ParseWithClaims(ts, claims, func(t *jwt.Token) (interface{}, error) {
@@ -69,5 +69,28 @@ func ValidateJWT(ts string) (*jwt.Token, error) {
 		return []byte(os.Getenv("JWT_SECRET_KEY")), nil
 	})
 
-	return token, err
+	if err != nil {
+		v, _ := err.(jwt.ValidationError)
+		switch v.Errors {
+		case jwt.ValidationErrorExpired:
+			return nil, false, authError.ErrExpToken
+		default:
+			return nil, false, authError.ErrUnauthorized
+		}
+	}
+
+	if !token.Valid {
+		return nil, false, authError.ErrInvalidToken
+	}
+
+	return token.Claims.(*JWTClaim), true, nil
+}
+
+func VerifyRefreshToken(s entity.Session) (*JWTClaim, error) {
+	payload, ok, err := ValidateJWT(s.Token)
+	if !ok || err != nil {
+		return &JWTClaim{}, err
+	}
+
+	return payload, nil
 }

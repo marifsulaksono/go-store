@@ -14,6 +14,7 @@ import (
 func routeInit(conn *gorm.DB) *mux.Router {
 	// ============== Dependency Injection ============
 	userRepo := repo.NewUserRepository(conn)
+	authRepo := repo.NewAuthentiocationRepo(conn)
 	saRepo := repo.NewShippingAddressRepo(conn)
 	categoryRepo := repo.NewCategoryRepository(conn)
 	storeRepo := repo.NewStoreRepository(conn)
@@ -23,6 +24,7 @@ func routeInit(conn *gorm.DB) *mux.Router {
 	notifRepo := repo.NewNotificationRepository(conn)
 
 	userService := service.NewUserService(userRepo)
+	authService := service.NewAuthenticationService(authRepo, userRepo)
 	saService := service.NewShippingAddressService(saRepo)
 	categoryService := service.NewCategoryService(categoryRepo)
 	storeService := service.NewStoreService(storeRepo, productRepo, userRepo)
@@ -32,6 +34,7 @@ func routeInit(conn *gorm.DB) *mux.Router {
 	notifService := service.NewNotificationService(notifRepo)
 
 	userController := controller.NewUserController(userService)
+	authController := controller.NewAuthenticationController(authService)
 	saController := controller.NewShippingAddressController(saService)
 	categoryController := controller.NewCategoryController(categoryService)
 	storeContoller := controller.NewStoreController(storeService)
@@ -48,7 +51,9 @@ func routeInit(conn *gorm.DB) *mux.Router {
 
 	// ===================== Router User ======================
 	r.HandleFunc("/register", userController.Register).Methods(http.MethodPost)
-	r.HandleFunc("/login", userController.LoginAuth).Methods(http.MethodPost)
+	r.HandleFunc("/login", authController.LoginController).Methods(http.MethodPost)
+	r.HandleFunc("/logout", authController.LogoutController).Methods(http.MethodPost)
+	r.HandleFunc("/refresh-token", authController.RenewAccessToken).Methods(http.MethodPost)
 	r.HandleFunc("/auth/google-callback", controller.CallbackGoogleAuth).Methods(http.MethodGet)
 
 	r.HandleFunc("/users/profile", middleware.JWTMiddleware(userController.UpdateUser)).Methods(http.MethodPut)
